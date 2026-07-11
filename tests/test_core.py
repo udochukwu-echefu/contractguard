@@ -4,6 +4,7 @@ from pathlib import Path
 
 from analyzer import parse_document, review_context_text, safe_filename
 from export_utils import build_csv, build_json_report, build_markdown_report
+from styles import APP_CSS
 
 
 class ContractGuardCoreTests(unittest.TestCase):
@@ -57,6 +58,11 @@ class ContractGuardCoreTests(unittest.TestCase):
         csv_text = build_csv([{"party": "Tenant", "obligation": "Pay rent"}])
         self.assertIn("party,obligation", csv_text)
         self.assertEqual(safe_filename("My lease (final)"), "My-lease-final")
+
+    def test_streamlit_toolbar_has_reserved_layout_space(self):
+        self.assertIn('header[data-testid="stHeader"]', APP_CSS)
+        self.assertIn("padding: 5.5rem 2rem 4rem", APP_CSS)
+        self.assertIn("top:4.25rem", APP_CSS)
 
 
 if __name__ == "__main__":
