@@ -59,10 +59,11 @@ class ContractGuardCoreTests(unittest.TestCase):
         self.assertIn("party,obligation", csv_text)
         self.assertEqual(safe_filename("My lease (final)"), "My-lease-final")
 
-    def test_streamlit_toolbar_has_reserved_layout_space(self):
+    def test_streamlit_toolbar_is_removed_without_hiding_sidebar_control(self):
         self.assertIn('header[data-testid="stHeader"]', APP_CSS)
-        self.assertIn("padding: 5.5rem 2rem 4rem", APP_CSS)
-        self.assertIn("top:4.25rem", APP_CSS)
+        self.assertIn('header[data-testid="stHeader"] [data-testid="stToolbar"]', APP_CSS)
+        self.assertIn("display: none !important", APP_CSS)
+        self.assertIn('[data-testid="stSidebarCollapsedControl"]', APP_CSS)
 
 
 if __name__ == "__main__":

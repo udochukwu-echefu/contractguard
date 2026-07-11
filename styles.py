@@ -26,32 +26,32 @@ html, body, [class*="css"], .stApp { font-family: "Figtree", system-ui, sans-ser
 [data-testid="stAppViewContainer"] main label, [data-testid="stAppViewContainer"] main li,
 [data-testid="stAppViewContainer"] main h1, [data-testid="stAppViewContainer"] main h2,
 [data-testid="stAppViewContainer"] main h3 { color: var(--cg-text); }
-.block-container { max-width: 1180px; padding: 5.5rem 2rem 4rem; }
+.block-container { max-width: 1180px; padding: 1.5rem 2rem 4rem; }
 
-/* Streamlit Cloud owns this fixed header. Reserve its full height so app
-   content and sticky navigation never render underneath the platform tools. */
+/* Use Streamlit's minimal chrome mode and remove Community Cloud's remaining
+   injected toolbar. Keep the sidebar reopen control available on small screens. */
 header[data-testid="stHeader"] {
-    height: 4.25rem;
-    background: oklch(0.17 0.01 250 / .98);
-    border-bottom: 1px solid var(--cg-border-strong);
-    box-shadow: 0 .35rem 1.2rem oklch(0.05 0.008 250 / .35);
+    height: 0;
+    min-height: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
 }
 header[data-testid="stHeader"] [data-testid="stToolbar"] {
-    min-height: 4.25rem;
-    background: transparent;
+    display: none !important;
 }
-header[data-testid="stHeader"] button,
-header[data-testid="stHeader"] a {
+[data-testid="stSidebarCollapsedControl"] {
+    top: .75rem;
+    left: .75rem;
+    z-index: 1001;
+}
+[data-testid="stSidebarCollapsedControl"] button {
+    min-width: 44px;
+    min-height: 44px;
     color: var(--cg-text) !important;
-    border-radius: .5rem;
-}
-header[data-testid="stHeader"] button:hover,
-header[data-testid="stHeader"] a:hover {
-    background: var(--cg-panel-soft) !important;
-}
-header[data-testid="stHeader"] svg {
-    color: var(--cg-text) !important;
-    fill: currentColor;
+    background: var(--cg-panel) !important;
+    border: 1px solid var(--cg-border-strong) !important;
+    border-radius: .65rem !important;
 }
 
 [data-testid="stSidebar"] { background: oklch(0.105 0.008 250); border-right: 1px solid var(--cg-border); }
@@ -113,7 +113,7 @@ header[data-testid="stHeader"] svg {
 .cg-summary-strip strong { font-size:1.25rem; }
 .cg-summary-strip span { color:var(--cg-muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; }
 
-div[data-testid="stTabs"] [data-baseweb="tab-list"] { position:sticky; top:4.25rem; z-index:5; background:var(--cg-bg); border-bottom:1px solid var(--cg-border); overflow-x:auto; scrollbar-width:thin; }
+div[data-testid="stTabs"] [data-baseweb="tab-list"] { position:sticky; top:0; z-index:5; background:var(--cg-bg); border-bottom:1px solid var(--cg-border); overflow-x:auto; scrollbar-width:thin; }
 div[data-testid="stTabs"] button[role="tab"] { min-height:44px; padding:0 1rem; }
 div[data-testid="stTabs"] button[role="tab"] p { color:var(--cg-muted); font-weight:700; white-space:nowrap; }
 div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p { color:var(--cg-text); }
@@ -151,10 +151,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 [data-testid="stDataFrame"] { border:1px solid var(--cg-border); border-radius:.75rem; overflow:hidden; }
 
 @media (max-width:900px) {
-    .block-container { padding:4.75rem 1rem 3rem; }
-    header[data-testid="stHeader"],
-    header[data-testid="stHeader"] [data-testid="stToolbar"] { min-height:3.75rem; height:3.75rem; }
-    div[data-testid="stTabs"] [data-baseweb="tab-list"] { top:3.75rem; }
+    .block-container { padding:1rem 1rem 3rem; }
     .cg-topbar { align-items:flex-start; padding:.5rem 0; }
     .cg-nav-right { display:none; }
     .cg-hero { padding:1.6rem 0 1rem; }
