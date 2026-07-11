@@ -1,7 +1,9 @@
 import importlib
 import os
 import tempfile
+from datetime import datetime
 from html import escape
+from uuid import uuid4
 
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
@@ -39,6 +41,8 @@ def initialize_state():
         "messages": [],
         "file_processed": False,
         "source_name": None,
+        "review_history": [],
+        "active_review_id": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -52,6 +56,71 @@ def reset_workspace():
     st.session_state.messages = []
     st.session_state.file_processed = False
     st.session_state.source_name = None
+    st.session_state.active_review_id = None
+
+
+def summarize_report(report):
+    risks = report.get("risk_assessment", []) if report else []
+    counts = ui.risk_counts(risks)
+    return {
+        "high": counts["high"],
+        "medium": counts["medium"],
+        "low": counts["low"],
+        "missing": len(report.get("missing_protections", [])) if report else 0,
+    }
+
+
+def save_current_review():
+    report = st.session_state.analysis
+    if not report:
+        return
+
+    review_id = st.session_state.active_review_id or str(uuid4())
+    st.session_state.active_review_id = review_id
+
+    review = {
+        "id": review_id,
+        "source_name": st.session_state.source_name or "Uploaded contract",
+        "contract_type": report.get("contract_type") or "Unknown contract",
+        "created_at": datetime.now().strftime("%b %d, %Y %I:%M %p"),
+        "analysis": report,
+        "qa_chain": st.session_state.qa_chain,
+        "chat_history": list(st.session_state.chat_history),
+        "messages": list(st.session_state.messages),
+        "summary": summarize_report(report),
+    }
+
+    existing_index = next(
+        (index for index, item in enumerate(st.session_state.review_history) if item["id"] == review_id),
+        None,
+    )
+    if existing_index is None:
+        st.session_state.review_history.insert(0, review)
+    else:
+        st.session_state.review_history[existing_index] = {
+            **st.session_state.review_history[existing_index],
+            **review,
+            "created_at": st.session_state.review_history[existing_index]["created_at"],
+        }
+
+
+def load_review(review_id):
+    review = next((item for item in st.session_state.review_history if item["id"] == review_id), None)
+    if not review:
+        return
+
+    st.session_state.analysis = review["analysis"]
+    st.session_state.qa_chain = review["qa_chain"]
+    st.session_state.chat_history = list(review.get("chat_history", []))
+    st.session_state.messages = list(review.get("messages", []))
+    st.session_state.file_processed = True
+    st.session_state.source_name = review.get("source_name")
+    st.session_state.active_review_id = review_id
+
+
+def clear_review_history():
+    st.session_state.review_history = []
+    reset_workspace()
 
 
 def friendly_error(exc):
@@ -98,6 +167,18 @@ def render_sidebar():
                 reset_workspace()
                 st.rerun()
 
+        ui.render_review_history_intro(st.session_state.review_history)
+        for review in st.session_state.review_history[:6]:
+            ui.render_history_card(review, review.get("id") == st.session_state.active_review_id)
+            if st.button("Open report", key=f"open_review_{review['id']}", use_container_width=True):
+                load_review(review["id"])
+                st.rerun()
+
+        if st.session_state.review_history:
+            if st.button("Clear review history", use_container_width=True):
+                clear_review_history()
+                st.rerun()
+
     return uploaded_file
 
 
@@ -123,6 +204,7 @@ def process_upload(uploaded_file):
             st.session_state.messages = []
             st.session_state.file_processed = True
             st.session_state.source_name = uploaded_file.name
+            save_current_review()
             st.rerun()
         except ValueError as exc:
             st.error(str(exc))
@@ -167,6 +249,7 @@ def render_chat():
         st.session_state.messages.append({"role": "assistant", "content": answer})
         st.session_state.chat_history.append(HumanMessage(content=question))
         st.session_state.chat_history.append(AIMessage(content=answer))
+        save_current_review()
 
 
 def render_chat_message(role, content):

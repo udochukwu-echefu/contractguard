@@ -181,6 +181,101 @@ APP_CSS = """
         margin: 1.25rem 0;
     }
 
+    .cg-history-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin: 0 0 0.75rem;
+    }
+
+    .cg-history-title {
+        color: var(--cg-ink);
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .cg-history-count {
+        color: var(--cg-ink-faint);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        margin-top: 0.2rem;
+    }
+
+    .cg-history-card {
+        border: 1px solid var(--cg-line-soft);
+        border-radius: 0.95rem;
+        background: var(--cg-panel);
+        padding: 0.85rem;
+        margin: 0.65rem 0 0.45rem;
+    }
+
+    .cg-history-card-active {
+        border-color: var(--cg-accent);
+        background: var(--cg-panel-2);
+    }
+
+    .cg-history-card-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.8rem;
+        align-items: start;
+        margin-bottom: 0.8rem;
+    }
+
+    .cg-history-name {
+        color: var(--cg-ink);
+        font-size: 0.92rem;
+        font-weight: 780;
+        line-height: 1.25;
+    }
+
+    .cg-history-source,
+    .cg-history-date {
+        color: var(--cg-ink-faint);
+        font-size: 0.75rem;
+        line-height: 1.35;
+    }
+
+    .cg-history-date {
+        max-width: 5.6rem;
+        text-align: right;
+    }
+
+    .cg-history-metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .cg-history-metric {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.55rem;
+        border: 1px solid var(--cg-line);
+        border-radius: 999px;
+        padding: 0 0.48rem;
+        background: var(--cg-bg);
+        color: var(--cg-ink-soft);
+        font-size: 0.72rem;
+        font-weight: 760;
+        line-height: 1;
+    }
+
+    .cg-history-metric.high {
+        color: var(--cg-high);
+    }
+
+    .cg-history-metric.medium {
+        color: var(--cg-medium);
+    }
+
+    .cg-history-metric.low {
+        color: var(--cg-low);
+    }
+
     .cg-kicker {
         color: var(--cg-accent);
         font-size: 0.78rem;

@@ -51,6 +51,47 @@ def render_sidebar_intro():
     )
 
 
+def render_review_history_intro(history):
+    count = len(history)
+    label = "No saved reviews yet" if count == 0 else f"{count} saved review{'s' if count != 1 else ''}"
+    st.markdown(
+        f"""
+        <div class="cg-sidebar-rule"></div>
+        <div class="cg-history-head">
+            <div>
+                <div class="cg-history-title">Review history</div>
+                <div class="cg-history-count">{safe_text(label)}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_history_card(review, is_active=False):
+    summary = review.get("summary", {})
+    active_class = " cg-history-card-active" if is_active else ""
+    st.markdown(
+        f"""
+        <div class="cg-history-card{active_class}">
+            <div class="cg-history-card-top">
+                <div>
+                    <div class="cg-history-name">{safe_text(review.get("contract_type"), "Unknown contract")}</div>
+                    <div class="cg-history-source">{safe_text(review.get("source_name"), "Uploaded contract")}</div>
+                </div>
+                <div class="cg-history-date">{safe_text(review.get("created_at"))}</div>
+            </div>
+            <div class="cg-history-metrics" aria-label="Review summary">
+                <span class="cg-history-metric high">{summary.get("high", 0)} high</span>
+                <span class="cg-history-metric medium">{summary.get("medium", 0)} med</span>
+                <span class="cg-history-metric low">{summary.get("missing", 0)} missing</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_empty_state():
     st.markdown(
         """
