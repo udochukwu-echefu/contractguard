@@ -38,6 +38,11 @@ Use Figtree for interface and display text with a system sans-serif fallback. Bo
 - Status pills: semantic color plus text, never color alone
 - Empty states: short instructions and one clear next action
 - Loading: staged status text for parsing, analysis, and retrieval setup
+- Workspace switcher: two explicit product modes, Contract Review and Verify Onboarding
+- Verify queue: applicant, risk score, flag count, and suggested action at a glance
+- Reconciliation matrix: submitted and extracted values shown without hiding missing fields
+- Evidence panels: source, exact value, field, location, and extraction confidence
+- Decision history: recommendation, human decision, rationale, reviewer, and timestamp
 
 ## Motion
 

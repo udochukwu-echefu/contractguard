@@ -17,6 +17,7 @@ from export_utils import (
 )
 import styles
 import ui
+import kyc_ui
 
 
 APP_NAME = "ContractGuard"
@@ -64,6 +65,7 @@ def initialize_state():
         "comparison": None,
         "review_notes": "",
         "question_input": "",
+        "workspace": "Contract review",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -187,7 +189,6 @@ def render_sidebar():
     uploaded_file = None
     consent = False
     with st.sidebar:
-        ui.render_sidebar_intro()
         ui.render_privacy_note()
         with st.expander("Review context", expanded=not st.session_state.file_processed):
             current = st.session_state.review_context
@@ -524,6 +525,20 @@ def render_report(report):
 def main():
     configure_page()
     initialize_state()
+    with st.sidebar:
+        ui.render_sidebar_intro()
+        workspace = st.radio(
+            "Workspace",
+            ["Contract review", "Verify onboarding"],
+            key="workspace",
+            horizontal=True,
+        )
+        if workspace == "Verify onboarding":
+            kyc_ui.initialize_verify_state()
+            kyc_ui.render_verify_sidebar()
+    if workspace == "Verify onboarding":
+        kyc_ui.render_verify_workspace()
+        return
     uploaded_file, consent = render_sidebar()
     process_upload(uploaded_file, consent)
     if not st.session_state.file_processed:

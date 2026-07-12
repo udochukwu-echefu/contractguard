@@ -37,10 +37,10 @@ def render_sidebar_intro():
             <div class="cg-mark">CG</div>
             <div>
                 <div class="cg-brand-text">ContractGuard</div>
-                <div class="cg-top-label">Clause intelligence</div>
+                <div class="cg-top-label">Document intelligence</div>
             </div>
         </div>
-        <p class="cg-sidebar-copy">Evidence-linked first-pass contract review, negotiation preparation, and document Q&amp;A.</p>
+        <p class="cg-sidebar-copy">Evidence-linked contract review and onboarding document reconciliation.</p>
         """,
         unsafe_allow_html=True,
     )

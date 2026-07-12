@@ -6,11 +6,11 @@ product
 
 ## Users
 
-People reviewing a contract before signing, negotiating, or speaking with qualified counsel. They may be tenants, employees, founders, vendors, landlords, buyers, or service providers and may not be fluent in legal language.
+People reviewing consequential documents before making or recording a decision. The Contract Review workspace serves people reviewing an agreement before signing, negotiating, or speaking with qualified counsel. The Verify workspace serves onboarding and compliance operations reviewers who need to reconcile submitted identity information across multiple documents.
 
 ## Product Purpose
 
-ContractGuard provides evidence-linked first-pass contract triage. It helps users understand key terms, locate risk, identify potentially missing protections, prepare negotiation questions, and create a concise handoff for professional review. It does not provide legal advice.
+ContractGuard is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, and professional-review handoff. ContractGuard Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
 
 ## Brand Personality
 
@@ -30,6 +30,8 @@ Calm, rigorous, direct. The interface should feel like a focused review desk: hi
 3. Honest uncertainty: say what was not found, what could not be parsed, and what needs verification.
 4. Privacy in context: explain document handling at the point of upload and provide deletion controls.
 5. Progressive depth: make the first screen scannable, then let users inspect clauses and supporting detail.
+6. Human decision ownership: automation may recommend, but consequential approvals and rejections must remain inspectable and attributable.
+7. Confidence is not risk: extraction reliability, discrepancy severity, and verification status must be displayed as separate signals.
 
 ## Accessibility & Inclusion
 

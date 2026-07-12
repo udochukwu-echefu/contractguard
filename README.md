@@ -1,5 +1,12 @@
 # ContractGuard
 
+ContractGuard is an evidence-led document intelligence workspace with two modes:
+
+- **Contract Review** turns agreements into evidence-linked risks, negotiation priorities, obligations, deadlines, comparisons, and grounded Q&A.
+- **Verify Onboarding** reconciles synthetic identity documents against an application, flags mismatches with deterministic rules, and supports explainable human decisions.
+
+The Verify milestone currently uses fictional demonstration cases only. It is not a production identity-verification or KYC service.
+
 ContractGuard is an evidence-linked Streamlit workspace for first-pass contract review. It helps users identify clauses that deserve attention, inspect supporting excerpts, prepare negotiation questions, extract obligations and deadlines, compare revisions, and create a concise handoff for qualified counsel.
 
 > ContractGuard is for education and triage only. It does not provide legal advice.
@@ -18,6 +25,9 @@ ContractGuard is an evidence-linked Streamlit workspace for first-pass contract 
 - **PDF, DOCX, Markdown, CSV, and JSON exports**
 - **Privacy notice and deletion controls** at the upload point
 - **Responsive, keyboard-accessible dark interface**
+- **Synthetic onboarding case queue** with low-, medium-, and high-risk examples
+- **Deterministic identity reconciliation** for names, dates of birth, addresses, document expiry, extraction confidence, and simulated face-match status
+- **Reviewer decision and audit history** with explainable recommendations and JSON case export
 
 ## Data handling
 
@@ -25,6 +35,7 @@ ContractGuard is an evidence-linked Streamlit workspace for first-pass contract 
 - Embeddings are computed in the running app using `all-MiniLM-L6-v2`.
 - Temporary upload files are deleted after parsing.
 - Review history and notes are stored in the active Streamlit session only.
+- Verify currently processes bundled synthetic data only and does not accept real identity documents.
 - Deployers should publish their own privacy, retention, subprocessors, logging, and security policies before accepting confidential production documents.
 
 ## Tech stack
@@ -63,3 +74,4 @@ The embedding model is cached once per app process. The first Q&A setup in a fre
 - A low attention score does not establish that an agreement is safe or enforceable.
 - Citations should be checked against the original document.
 - Session history is not a persistent multi-user workspace; production collaboration requires authentication and durable storage.
+- Verify does not validate document authenticity against issuing authorities and does not perform production face matching or liveness detection.
