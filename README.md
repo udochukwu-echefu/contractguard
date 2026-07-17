@@ -21,7 +21,11 @@ ContractGuard is an evidence-linked Streamlit workspace for first-pass contract 
 - **Obligation, payment, deadline, and notice extraction**
 - **Grounded Q&A** with inspectable retrieved sources
 - **Version comparison** for substantive additions, removals, and risk changes
-- **Session notes and review history**
+- **Persistent, owner-scoped review history** with configurable retention and hard deletion
+- **Privacy-first source retention**: save the report while keeping source text opt-in
+- **Reusable review playbooks** with preferred positions, fallbacks, escalation triggers, and owners
+- **Human decision and audit history** for accept, change, escalate, and resolve workflows
+- **Offline evaluation fixtures** for citation coverage, quote support, schema completeness, and expected-risk recall
 - **PDF, DOCX, Markdown, CSV, and JSON exports**
 - **Privacy notice and deletion controls** at the upload point
 - **Responsive, keyboard-accessible dark interface**
@@ -34,7 +38,9 @@ ContractGuard is an evidence-linked Streamlit workspace for first-pass contract 
 - Uploaded text is sent to the configured Groq model for analysis and Q&A generation.
 - Embeddings are computed in the running app using `all-MiniLM-L6-v2`.
 - Temporary upload files are deleted after parsing.
-- Review history and notes are stored in the active Streamlit session only.
+- Review reports and notes are stored in the configured database and scoped to the authenticated owner.
+- Extracted source text is not stored unless the reviewer explicitly enables source retention before upload.
+- Saved reviews are hard-deleted at the end of their selected retention period or when the reviewer deletes them.
 - Verify currently processes bundled synthetic data only and does not accept real identity documents.
 - Deployers should publish their own privacy, retention, subprocessors, logging, and security policies before accepting confidential production documents.
 
@@ -57,6 +63,10 @@ Create `.env`:
 
 ```env
 GROQ_API_KEY=your_key_here
+# Optional production Postgres connection. Local development defaults to SQLite.
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+# Require Streamlit OIDC before the app opens.
+CONTRACTGUARD_AUTH_REQUIRED=true
 ```
 
 Run:
@@ -73,5 +83,34 @@ The embedding model is cached once per app process. The first Q&A setup in a fre
 - Model-generated findings and suggested wording can be incomplete or wrong.
 - A low attention score does not establish that an agreement is safe or enforceable.
 - Citations should be checked against the original document.
-- Session history is not a persistent multi-user workspace; production collaboration requires authentication and durable storage.
+- Local development uses a single labelled `local-demo` owner and SQLite. Do not expose that mode as a shared production workspace.
+- OIDC authenticates users but does not provide organisation roles by itself; production administrators must define their own membership and authorisation policy.
 - Verify does not validate document authenticity against issuing authorities and does not perform production face matching or liveness detection.
+
+## Production workspace setup
+
+1. Provision a TLS-enabled Postgres database and add `DATABASE_URL` to Streamlit secrets or environment variables.
+2. Configure Streamlit OIDC in `.streamlit/secrets.toml` or the Community Cloud secrets console, then set `CONTRACTGUARD_AUTH_REQUIRED=true`.
+3. Register the deployed app's `/oauth2callback` URL with the identity provider.
+4. Confirm retention, database backups, encryption, subprocessors, and incident procedures before accepting confidential documents.
+
+Example OIDC structure (replace every value in the deployment secrets console; never commit the real file):
+
+```toml
+[auth]
+redirect_uri = "https://your-app.example.com/oauth2callback"
+cookie_secret = "replace-with-a-strong-random-secret"
+client_id = "provider-client-id"
+client_secret = "provider-client-secret"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+```
+
+## Evaluation gate
+
+Run the deterministic synthetic fixture suite before changing prompts or models:
+
+```bash
+python -m evaluation evaluation_fixtures
+```
+
+The command fails when citation coverage, source-quote support, schema completeness, expected-risk recall, or attention accuracy falls below the declared thresholds.

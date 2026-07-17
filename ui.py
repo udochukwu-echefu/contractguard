@@ -51,7 +51,7 @@ def render_privacy_note():
         """
         <div class="cg-trust-note">
             <strong>Before you upload</strong>
-            <p>Text is sent to Groq to generate the review and Q&amp;A. Embeddings are created in the app session. Temporary upload files are deleted after parsing. Do not upload material you are not authorised to process.</p>
+            <p>Text is sent to Groq to generate the review and Q&amp;A. Temporary upload files are deleted after parsing. The report is saved under your workspace retention policy; extracted source text is stored only when you opt in. Do not upload material you are not authorised to process.</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -60,7 +60,7 @@ def render_privacy_note():
 
 def render_review_history_intro(history):
     count = len(history)
-    label = "Session history is empty" if count == 0 else f"{count} review{'s' if count != 1 else ''} in this session"
+    label = "No saved reviews yet" if count == 0 else f"{count} saved review{'s' if count != 1 else ''}"
     st.markdown(
         f"""
         <div class="cg-sidebar-rule"></div>
@@ -277,6 +277,40 @@ def render_jargon(analysis):
             f"<div class='cg-panel'><div class='cg-panel-title'>{safe_text(item.get('term'), 'Term')}</div><p>{safe_text(item.get('plain_english'))}</p><div class='cg-inline-meta'>{safe_text(item.get('citation'), 'Location not identified')}</div></div>",
             unsafe_allow_html=True,
         )
+
+
+def render_playbook_evaluation(evaluation):
+    if not evaluation or not evaluation.get("deviations"):
+        st.info("No playbook evaluation is available for this report.")
+        return
+    summary = evaluation.get("summary", {})
+    st.markdown(
+        f"""
+        <div class="cg-comparison-summary">
+            <div class="cg-kicker">Review playbook</div>
+            <h2>{safe_text(evaluation.get('playbook_name'), 'Attached playbook')}</h2>
+            <p>{summary.get('escalate', 0)} escalation · {summary.get('review', 0)} to verify · {summary.get('within_guardrail', 0)} within guardrail</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    for item in evaluation.get("deviations", []):
+        status = item.get("status", "Review")
+        attention = item.get("attention", "Medium")
+        st.markdown(
+            f"""
+            <div class="cg-panel">
+                <div class="cg-risk-head"><div><div class="cg-label">{safe_text(status)}</div><div class="cg-panel-title">{safe_text(item.get('title'), 'Playbook rule')}</div></div>{severity_pill(attention)}</div>
+                <div class="cg-label">Preferred position</div><p>{safe_text(item.get('preferred_position'))}</p>
+                <div class="cg-label">Fallback</div><p>{safe_text(item.get('fallback_position'))}</p>
+                <div class="cg-label">Escalate when</div><p>{safe_text(item.get('escalation_trigger'))}</p>
+                <div class="cg-inline-meta">Owner: {safe_text(item.get('owner'), 'Unassigned')} · Matched: {safe_text(item.get('matched_finding'), 'Nothing detected')}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if item.get("quote"):
+            render_evidence(item)
 
 
 def render_chat_note():

@@ -10,7 +10,7 @@ People reviewing consequential documents before making or recording a decision. 
 
 ## Product Purpose
 
-ContractGuard is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, and professional-review handoff. ContractGuard Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
+ContractGuard is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, playbook-based deviation review, attributable human decisions, and professional-review handoff. ContractGuard Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
 
 ## Brand Personality
 
@@ -32,6 +32,7 @@ Calm, rigorous, direct. The interface should feel like a focused review desk: hi
 5. Progressive depth: make the first screen scannable, then let users inspect clauses and supporting detail.
 6. Human decision ownership: automation may recommend, but consequential approvals and rejections must remain inspectable and attributable.
 7. Confidence is not risk: extraction reliability, discrepancy severity, and verification status must be displayed as separate signals.
+8. Minimise retained data: persist the useful report by default, retain source text only with explicit user choice, and make retention and hard deletion visible.
 
 ## Accessibility & Inclusion
 

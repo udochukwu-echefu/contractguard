@@ -180,6 +180,22 @@ def parse_document(file_path):
     return full_text, chunks, _document_quality(full_text, documents, file_type, ocr_used)
 
 
+def chunks_from_text(text):
+    """Rebuild retrieval chunks from retained source text after a saved review is reopened."""
+    from langchain_core.documents import Document
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+    if not (text or "").strip():
+        return []
+    document = Document(page_content=text, metadata={"location": "Retained source text"})
+    splitter = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=140)
+    chunks = splitter.split_documents([document])
+    for index, chunk in enumerate(chunks, start=1):
+        chunk.metadata["chunk_id"] = index
+        chunk.metadata["location"] = f"Retained excerpt {index}"
+    return chunks
+
+
 def analyze_contract(text, review_context=None):
     llm = get_llm()
     json_llm = llm.bind(response_format={"type": "json_object"})

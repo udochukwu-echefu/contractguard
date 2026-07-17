@@ -43,6 +43,9 @@ Use Figtree for interface and display text with a system sans-serif fallback. Bo
 - Reconciliation matrix: submitted and extracted values shown without hiding missing fields
 - Evidence panels: source, exact value, field, location, and extraction confidence
 - Decision history: recommendation, human decision, rationale, reviewer, and timestamp
+- Review policy: playbook, retention period, and source-text choice grouped before upload
+- Playbook result: preferred position, fallback, escalation trigger, owner, matched finding, and evidence
+- Saved review history: owner-scoped records labelled as saved rather than session-only
 
 ## Motion
 
