@@ -65,6 +65,14 @@ class ContractGuardCoreTests(unittest.TestCase):
         self.assertIn("display: none !important", APP_CSS)
         self.assertIn('[data-testid="stSidebarCollapsedControl"]', APP_CSS)
 
+    def test_review_setup_is_styled_as_a_primary_main_page_workflow(self):
+        self.assertIn(".st-key-review_setup", APP_CSS)
+        self.assertIn('[data-testid="stFormSubmitButton"]', APP_CSS)
+        app_source = Path(__file__).resolve().parents[1].joinpath("app.py").read_text()
+        self.assertIn("def render_review_setup", app_source)
+        self.assertIn('st.form_submit_button("Review contract"', app_source)
+        self.assertIn('initial_sidebar_state="auto"', app_source)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -95,25 +95,28 @@ def render_history_card(review, is_active=False):
     )
 
 
-def render_empty_state():
+def render_review_setup_header():
     st.markdown(
         """
         <div class="cg-shell">
             <div class="cg-topbar">
-                <div class="cg-nav-left"><div class="cg-dot"></div><div class="cg-top-label">ContractGuard</div><div class="cg-chip">Ready</div></div>
-                <div class="cg-nav-right"><div class="cg-chip">PDF / DOCX / TXT</div><div class="cg-chip">Evidence linked</div></div>
+                <div class="cg-nav-left"><div class="cg-dot"></div><div class="cg-top-label">ContractGuard</div><div class="cg-chip">New review</div></div>
+                <div class="cg-nav-right"><div class="cg-chip">PDF / DOCX / TXT</div><div class="cg-chip">25 MB maximum</div></div>
             </div>
-            <section class="cg-hero">
+            <section class="cg-setup-header">
                 <div class="cg-kicker">Contract review workspace</div>
-                <h1>Know what deserves a second look.</h1>
-                <p class="cg-hero-copy">Turn an agreement into a traceable first-pass report: priority risks, supporting clauses, negotiation asks, obligations, deadlines, and grounded follow-up answers.</p>
-                <div class="cg-signal-row">
-                    <div class="cg-signal"><div class="cg-signal-code">01</div><div class="cg-signal-title">Set your context</div><p>Tell ContractGuard which party you are and where the agreement applies.</p></div>
-                    <div class="cg-signal"><div class="cg-signal-code">02</div><div class="cg-signal-title">Follow the evidence</div><p>Inspect the clause, location, confidence, and uncertainty behind each finding.</p></div>
-                    <div class="cg-signal"><div class="cg-signal-code">03</div><div class="cg-signal-title">Prepare your next move</div><p>Export negotiation priorities, suggested language, questions, and obligations.</p></div>
+                <div class="cg-setup-grid">
+                    <div>
+                        <h1>Review a contract.</h1>
+                        <p>Upload the agreement, set your perspective, and generate a first-pass report grounded in the document.</p>
+                    </div>
+                    <div class="cg-setup-outcome">
+                        <span>Review output</span>
+                        <strong>Risks with evidence, not unexplained scores.</strong>
+                        <p>Get negotiation asks, possible protection gaps, obligations, deadlines, and grounded follow-up answers.</p>
+                    </div>
                 </div>
             </section>
-            <div class="cg-empty-note"><strong>Start in the sidebar.</strong> Load the sample lease or upload a document you are authorised to review.</div>
         </div>
         """,
         unsafe_allow_html=True,

@@ -47,7 +47,7 @@ class SampleFile:
 
 
 def configure_page():
-    st.set_page_config(page_title=APP_NAME, page_icon="CG", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title=APP_NAME, page_icon="CG", layout="wide", initial_sidebar_state="auto")
     st.markdown(styles.APP_CSS, unsafe_allow_html=True)
 
 
@@ -205,8 +205,6 @@ def load_sample_contract():
 
 
 def render_sidebar(store, identity):
-    uploaded_file = None
-    consent = False
     with st.sidebar:
         account_label = identity.email or identity.name
         st.caption(f"Workspace owner: {account_label}")
@@ -215,114 +213,14 @@ def render_sidebar(store, identity):
                 st.logout()
         elif store.config.local_only:
             st.caption("Local development mode · not for shared production use")
-        ui.render_privacy_note()
-        with st.expander("Review context", expanded=not st.session_state.file_processed):
-            current = st.session_state.review_context
-            party_options = [
-                "Not sure / general review",
-                "Tenant / buyer / customer",
-                "Landlord / seller / provider",
-                "Employee / contractor",
-                "Employer / client",
-                "Founder / company",
-                "Other",
-            ]
-            party = st.selectbox(
-                "Which side are you reviewing for?",
-                party_options,
-                index=party_options.index(current.get("party_role", party_options[0])) if current.get("party_role") in party_options else 0,
-                disabled=st.session_state.file_processed,
-            )
-            jurisdiction = st.text_input(
-                "Jurisdiction or governing law",
-                value=current.get("jurisdiction", ""),
-                placeholder="e.g. Lagos State, Nigeria",
-                disabled=st.session_state.file_processed,
-            )
-            goal_options = ["Understand before signing", "Prepare to negotiate", "Prepare for counsel", "Check a revised version"]
-            goal = st.selectbox(
-                "Primary goal",
-                goal_options,
-                index=goal_options.index(current.get("goal", goal_options[0])) if current.get("goal") in goal_options else 0,
-                disabled=st.session_state.file_processed,
-            )
-            tolerance_options = ["Conservative", "Balanced", "Commercially flexible"]
-            tolerance = st.selectbox(
-                "Risk posture",
-                tolerance_options,
-                index=tolerance_options.index(current.get("risk_tolerance", "Balanced")) if current.get("risk_tolerance") in tolerance_options else 1,
-                disabled=st.session_state.file_processed,
-            )
-            if not st.session_state.file_processed:
-                st.session_state.review_context = {
-                    "party_role": party,
-                    "jurisdiction": jurisdiction.strip(),
-                    "goal": goal,
-                    "risk_tolerance": tolerance,
-                }
-
-        with st.expander("Review policy", expanded=not st.session_state.file_processed):
-            playbooks = st.session_state.playbooks
-            playbook_ids = [item["id"] for item in playbooks]
-            if st.session_state.active_playbook_id not in playbook_ids and playbook_ids:
-                st.session_state.active_playbook_id = playbook_ids[0]
-            if playbooks:
-                selected_index = playbook_ids.index(st.session_state.active_playbook_id)
-                playbook_names = {item["id"]: item["name"] for item in playbooks}
-                selected_playbook_id = st.selectbox(
-                    "Review playbook",
-                    playbook_ids,
-                    index=selected_index,
-                    format_func=lambda playbook_id: playbook_names[playbook_id],
-                    disabled=st.session_state.file_processed,
-                )
-                if not st.session_state.file_processed:
-                    st.session_state.active_playbook_id = selected_playbook_id
-            retention_options = [7, 30, 90, 365]
-            current_retention = st.session_state.retention_days
-            retention_index = retention_options.index(current_retention) if current_retention in retention_options else 1
-            st.session_state.retention_days = st.selectbox(
-                "Delete saved review after",
-                retention_options,
-                index=retention_index,
-                format_func=lambda days: f"{days} days",
-                disabled=st.session_state.file_processed,
-            )
-            st.session_state.retain_source_text = st.checkbox(
-                "Retain source text for reopened Q&A and comparison",
-                value=st.session_state.retain_source_text,
-                disabled=st.session_state.file_processed,
-                help="Off by default. The report is saved, but the extracted contract text is discarded after this session.",
-            )
-            if not st.session_state.retain_source_text:
-                st.caption("Privacy-first: saved reports reopen, but source-based Q&A and comparison do not.")
-
-        st.markdown("#### Upload contract")
-        uploaded_file = st.file_uploader(
-            "PDF, DOCX, or TXT up to 25 MB",
-            type=["pdf", "docx", "txt"],
-            label_visibility="collapsed",
-        )
-        if uploaded_file:
-            consent = st.checkbox(
-                "I am authorised to process this document and understand that its text is sent to Groq.",
-            )
-        if st.button("Load sample lease", width="stretch"):
-            uploaded_file = load_sample_contract()
-            consent = True
 
         if st.session_state.file_processed:
             st.divider()
-            st.caption(f"Current document: {st.session_state.source_name or 'Uploaded contract'}")
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("New review", width="stretch"):
-                    reset_workspace()
-                    st.rerun()
-            with col_b:
-                if st.button("Delete", type="secondary", width="stretch"):
-                    delete_current_review(store, identity)
-                    st.rerun()
+            st.markdown("#### Current review")
+            st.caption(st.session_state.source_name or "Uploaded contract")
+            if st.button("Delete current review", type="secondary", width="stretch"):
+                delete_current_review(store, identity)
+                st.rerun()
 
         ui.render_review_history_intro(st.session_state.review_history)
         for review in st.session_state.review_history:
@@ -337,14 +235,140 @@ def render_sidebar(store, identity):
                 st.session_state.review_history = []
                 reset_workspace()
                 st.rerun()
-    return uploaded_file, consent
 
 
-def process_upload(uploaded_file, consent, store, identity):
-    if not uploaded_file or st.session_state.file_processed:
+def render_review_setup(store, identity):
+    ui.render_review_setup_header()
+    current = st.session_state.review_context
+    party_options = [
+        "Not sure / general review",
+        "Tenant / buyer / customer",
+        "Landlord / seller / provider",
+        "Employee / contractor",
+        "Employer / client",
+        "Founder / company",
+        "Other",
+    ]
+    goal_options = [
+        "Understand before signing",
+        "Prepare to negotiate",
+        "Prepare for counsel",
+        "Check a revised version",
+    ]
+    tolerance_options = ["Conservative", "Balanced", "Commercially flexible"]
+    playbooks = st.session_state.playbooks
+    playbook_ids = [item["id"] for item in playbooks]
+    if st.session_state.active_playbook_id not in playbook_ids and playbook_ids:
+        st.session_state.active_playbook_id = playbook_ids[0]
+    playbook_names = {item["id"]: item["name"] for item in playbooks}
+    selected_playbook_index = (
+        playbook_ids.index(st.session_state.active_playbook_id) if st.session_state.active_playbook_id in playbook_ids else 0
+    )
+    retention_options = [7, 30, 90, 365]
+    retention_index = (
+        retention_options.index(st.session_state.retention_days)
+        if st.session_state.retention_days in retention_options
+        else 1
+    )
+
+    with st.container(key="review_setup"):
+        with st.form("review-setup-form"):
+            st.markdown("<div class='cg-form-step'>01 · Add the agreement</div>", unsafe_allow_html=True)
+            uploaded_file = st.file_uploader(
+                "Upload contract",
+                type=["pdf", "docx", "txt"],
+                help="PDF, DOCX, or TXT up to 25 MB",
+            )
+
+            st.markdown("<div class='cg-form-step'>02 · Set the review context</div>", unsafe_allow_html=True)
+            context_left, context_right = st.columns(2, gap="large")
+            with context_left:
+                party = st.selectbox(
+                    "Which side are you reviewing for?",
+                    party_options,
+                    index=party_options.index(current.get("party_role", party_options[0]))
+                    if current.get("party_role") in party_options
+                    else 0,
+                )
+                goal = st.selectbox(
+                    "Primary goal",
+                    goal_options,
+                    index=goal_options.index(current.get("goal", goal_options[0]))
+                    if current.get("goal") in goal_options
+                    else 0,
+                )
+            with context_right:
+                jurisdiction = st.text_input(
+                    "Jurisdiction or governing law",
+                    value=current.get("jurisdiction", ""),
+                    placeholder="e.g. Lagos State, Nigeria",
+                )
+                tolerance = st.selectbox(
+                    "Risk posture",
+                    tolerance_options,
+                    index=tolerance_options.index(current.get("risk_tolerance", "Balanced"))
+                    if current.get("risk_tolerance") in tolerance_options
+                    else 1,
+                )
+
+            st.markdown("<div class='cg-form-step'>03 · Choose the review policy</div>", unsafe_allow_html=True)
+            policy_left, policy_right = st.columns(2, gap="large")
+            with policy_left:
+                selected_playbook_id = None
+                if playbook_ids:
+                    selected_playbook_id = st.selectbox(
+                        "Review playbook",
+                        playbook_ids,
+                        index=selected_playbook_index,
+                        format_func=lambda playbook_id: playbook_names[playbook_id],
+                    )
+                else:
+                    st.info("No review playbooks are available yet.")
+            with policy_right:
+                retention_days = st.selectbox(
+                    "Delete saved review after",
+                    retention_options,
+                    index=retention_index,
+                    format_func=lambda days: f"{days} days",
+                )
+            retain_source_text = st.checkbox(
+                "Retain source text for reopened Q&A and comparison",
+                value=st.session_state.retain_source_text,
+                help="Off by default. The report is saved, but extracted contract text is discarded after this session.",
+            )
+            ui.render_privacy_note()
+            consent = st.checkbox(
+                "I am authorised to process this document and understand that its text is sent to Groq.",
+            )
+            submitted = st.form_submit_button("Review contract", type="primary", width="stretch")
+
+        sample_clicked = st.button("Review the sample lease", key="main-sample-review", width="stretch")
+
+    if submitted:
+        st.session_state.review_context = {
+            "party_role": party,
+            "jurisdiction": jurisdiction.strip(),
+            "goal": goal,
+            "risk_tolerance": tolerance,
+        }
+        if selected_playbook_id:
+            st.session_state.active_playbook_id = selected_playbook_id
+        st.session_state.retention_days = retention_days
+        st.session_state.retain_source_text = retain_source_text
+
+    if sample_clicked:
+        return load_sample_contract(), True, True
+    return uploaded_file, consent, submitted
+
+
+def process_upload(uploaded_file, consent, submitted, store, identity):
+    if not submitted or st.session_state.file_processed:
+        return
+    if not uploaded_file:
+        st.warning("Add a PDF, DOCX, or TXT contract before starting the review.")
         return
     if not consent:
-        st.warning("Confirm the document-processing notice in the sidebar before analysis.")
+        st.warning("Confirm that you are authorised to process this document before starting the review.")
         return
     data = uploaded_file.read()
     if len(data) > MAX_FILE_BYTES:
@@ -691,6 +715,12 @@ def render_decisions(report, store, identity):
 
 
 def render_report(report, store, identity):
+    with st.container(key="report_actions"):
+        action_space, action_button = st.columns([3, 1])
+        with action_button:
+            if st.button("Review another contract", width="stretch"):
+                reset_workspace()
+                st.rerun()
     ui.render_report_header(
         report,
         st.session_state.source_name,
@@ -749,10 +779,10 @@ def main():
     if workspace == "Verify onboarding":
         kyc_ui.render_verify_workspace()
         return
-    uploaded_file, consent = render_sidebar(store, identity)
-    process_upload(uploaded_file, consent, store, identity)
+    render_sidebar(store, identity)
     if not st.session_state.file_processed:
-        ui.render_empty_state()
+        uploaded_file, consent, submitted = render_review_setup(store, identity)
+        process_upload(uploaded_file, consent, submitted, store, identity)
         return
     report = st.session_state.analysis
     if not report:

@@ -89,6 +89,28 @@ header[data-testid="stHeader"] [data-testid="stToolbar"] {
 .cg-dot { width:.65rem; height:.65rem; border-radius:50%; background:var(--cg-accent); }
 .cg-chip,.cg-confidence { display:inline-flex; align-items:center; min-height:1.8rem; border:1px solid var(--cg-border); border-radius:999px; padding:.2rem .55rem; color:var(--cg-muted); font-size:.72rem; white-space:nowrap; }
 
+.cg-setup-header { padding:2rem 0 1.5rem; }
+.cg-setup-grid { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(18rem,.55fr); gap:3rem; align-items:end; }
+.cg-setup-header h1 { margin:.65rem 0 .8rem; font-size:3.8rem; line-height:.94; letter-spacing:-.05em; font-weight:800; }
+.cg-setup-header > .cg-setup-grid > div:first-child > p { max-width:62ch; margin:0; color:var(--cg-muted) !important; font-size:1.08rem; line-height:1.6; }
+.cg-setup-outcome { padding-left:1.4rem; border-left:1px solid var(--cg-border); }
+.cg-setup-outcome span { display:block; margin-bottom:.65rem; color:var(--cg-faint); font-size:.7rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.cg-setup-outcome strong { display:block; font-size:1rem; line-height:1.4; }
+.cg-setup-outcome p { margin:.55rem 0 0; color:var(--cg-muted) !important; font-size:.84rem; line-height:1.5; }
+
+.st-key-review_setup { margin-top:1.25rem; }
+.st-key-review_setup [data-testid="stForm"] { padding:1.35rem 1.4rem 1.45rem; border:1px solid var(--cg-border-strong); border-radius:1rem; background:var(--cg-panel); }
+.st-key-review_setup [data-testid="stFileUploaderDropzone"] { min-height:8.5rem; display:flex; align-items:center; border-style:solid; background:oklch(0.145 0.012 250); }
+.st-key-review_setup [data-testid="stFileUploader"] { margin-bottom:.4rem; }
+.st-key-review_setup .cg-form-step { margin:2rem 0 .9rem; padding-top:1.1rem; border-top:1px solid var(--cg-border); color:var(--cg-accent); font-size:.72rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.st-key-review_setup .cg-form-step:first-child { margin-top:0; padding-top:0; border-top:0; }
+.st-key-review_setup .cg-trust-note { margin:1rem 0 .75rem; padding:.85rem 0; border:0; border-top:1px solid var(--cg-border); border-bottom:1px solid var(--cg-border); border-radius:0; background:transparent; }
+.st-key-review_setup .cg-trust-note p { max-width:76ch; }
+.st-key-review_setup [data-testid="stFormSubmitButton"] button { min-height:3.25rem; margin-top:.45rem; border-color:var(--cg-accent) !important; background:var(--cg-accent) !important; color:oklch(0.14 0.012 25) !important; font-size:1rem; }
+.st-key-review_setup [data-testid="stFormSubmitButton"] button:hover { border-color:var(--cg-focus) !important; background:var(--cg-focus) !important; color:oklch(0.12 0.01 25) !important; }
+.st-key-review_setup > div > div > .stButton button { background:transparent; }
+.st-key-report_actions { margin:0 0 .6rem; }
+
 .cg-hero { max-width:900px; padding:3rem 0 1.5rem; }
 .cg-hero h1 { max-width:780px; margin:.8rem 0 1rem; font-size:clamp(3rem,7vw,6.2rem); line-height:.9; letter-spacing:-.055em; font-weight:800; }
 .cg-hero-copy { max-width:68ch; color:var(--cg-muted) !important; font-size:1.15rem; line-height:1.6; }
@@ -175,6 +197,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
     .block-container { padding:1rem 1rem 3rem; }
     .cg-topbar { align-items:flex-start; padding:.5rem 0; }
     .cg-nav-right { display:none; }
+    .cg-setup-header { padding:1.4rem 0 1rem; }
+    .cg-setup-grid { grid-template-columns:1fr; gap:1.4rem; }
+    .cg-setup-header h1 { font-size:3rem; }
+    .cg-setup-outcome { padding:.95rem 0 0; border-left:0; border-top:1px solid var(--cg-border); }
+    .st-key-review_setup [data-testid="stForm"] { padding:1.1rem; }
+    .st-key-report_actions { margin:0 0 .6rem; }
     .cg-hero { padding:1.6rem 0 1rem; }
     .cg-hero h1 { font-size:3rem; }
     .cg-signal-row { grid-template-columns:1fr; }
@@ -191,6 +219,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 }
 
 @media (max-width:640px) {
+    .cg-setup-header h1 { font-size:2.45rem; }
+    .st-key-review_setup { margin-top:.65rem; }
+    .st-key-review_setup [data-testid="stForm"] { padding:.9rem; border-radius:.8rem; }
     .cg-hero h1 { font-size:2.45rem; }
     .cg-summary-strip { grid-template-columns:1fr; }
     .cg-summary-strip > div:nth-child(even) { border-left:0; }

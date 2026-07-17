@@ -25,6 +25,8 @@ Use Figtree for interface and display text with a system sans-serif fallback. Bo
 
 - Persistent 300px sidebar on desktop, collapsed by Streamlit on mobile
 - Main content capped near 1180px
+- New-review setup is a primary main-page workflow: upload, review context, policy, privacy, consent, then action
+- Sidebar is secondary navigation only: account, current review controls, and saved review history
 - Compact report summary strip, not oversized metric cards
 - Sticky report navigation where platform behavior allows
 - Single-column risk and evidence reading flow
@@ -44,6 +46,7 @@ Use Figtree for interface and display text with a system sans-serif fallback. Bo
 - Evidence panels: source, exact value, field, location, and extraction confidence
 - Decision history: recommendation, human decision, rationale, reviewer, and timestamp
 - Review policy: playbook, retention period, and source-text choice grouped before upload
+- Review entry: one prominent `Review contract` action, with the sample agreement as a secondary path
 - Playbook result: preferred position, fallback, escalation trigger, owner, matched finding, and evidence
 - Saved review history: owner-scoped records labelled as saved rather than session-only
 
