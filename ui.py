@@ -15,12 +15,12 @@ def severity_class(level):
 
 def severity_pill(level):
     severity = severity_class(level)
-    return f'<span class="cg-pill cg-pill-{severity}">{severity.title()} attention</span>'
+    return f'<span class="ll-pill ll-pill-{severity}">{severity.title()} attention</span>'
 
 
 def confidence_pill(confidence):
     value = str(confidence or "Medium").title()
-    return f'<span class="cg-confidence">{safe_text(value)} confidence</span>'
+    return f'<span class="ll-confidence">{safe_text(value)} confidence</span>'
 
 
 def risk_counts(risks):
@@ -33,14 +33,14 @@ def risk_counts(risks):
 def render_sidebar_intro():
     st.markdown(
         """
-        <div class="cg-brand">
-            <div class="cg-mark">CG</div>
+        <div class="ll-brand">
+            <div class="ll-mark">LL</div>
             <div>
-                <div class="cg-brand-text">ContractGuard</div>
-                <div class="cg-top-label">Document intelligence</div>
+                <div class="ll-brand-text">Lenslayer</div>
+                <div class="ll-top-label">Document intelligence</div>
             </div>
         </div>
-        <p class="cg-sidebar-copy">Evidence-linked contract review and onboarding document reconciliation.</p>
+        <p class="ll-sidebar-copy">Evidence-linked contract review and onboarding document reconciliation.</p>
         """,
         unsafe_allow_html=True,
     )
@@ -49,7 +49,7 @@ def render_sidebar_intro():
 def render_privacy_note():
     st.markdown(
         """
-        <div class="cg-trust-note">
+        <div class="ll-trust-note">
             <strong>Before you upload</strong>
             <p>Text is sent to Groq to generate the review and Q&amp;A. Temporary upload files are deleted after parsing. The report is saved under your workspace retention policy; extracted source text is stored only when you opt in. Do not upload material you are not authorised to process.</p>
         </div>
@@ -63,9 +63,9 @@ def render_review_history_intro(history):
     label = "No saved reviews yet" if count == 0 else f"{count} saved review{'s' if count != 1 else ''}"
     st.markdown(
         f"""
-        <div class="cg-sidebar-rule"></div>
-        <div class="cg-history-title">Review history</div>
-        <div class="cg-history-count">{safe_text(label)}</div>
+        <div class="ll-sidebar-rule"></div>
+        <div class="ll-history-title">Review history</div>
+        <div class="ll-history-count">{safe_text(label)}</div>
         """,
         unsafe_allow_html=True,
     )
@@ -73,18 +73,18 @@ def render_review_history_intro(history):
 
 def render_history_card(review, is_active=False):
     summary = review.get("summary", {})
-    active_class = " cg-history-card-active" if is_active else ""
+    active_class = " ll-history-card-active" if is_active else ""
     st.markdown(
         f"""
-        <div class="cg-history-card{active_class}">
-            <div class="cg-history-card-top">
+        <div class="ll-history-card{active_class}">
+            <div class="ll-history-card-top">
                 <div>
-                    <div class="cg-history-name">{safe_text(review.get('contract_type'), 'Unknown contract')}</div>
-                    <div class="cg-history-source">{safe_text(review.get('source_name'), 'Uploaded contract')}</div>
+                    <div class="ll-history-name">{safe_text(review.get('contract_type'), 'Unknown contract')}</div>
+                    <div class="ll-history-source">{safe_text(review.get('source_name'), 'Uploaded contract')}</div>
                 </div>
-                <div class="cg-history-date">{safe_text(review.get('created_at'))}</div>
+                <div class="ll-history-date">{safe_text(review.get('created_at'))}</div>
             </div>
-            <div class="cg-history-metrics" aria-label="Review summary">
+            <div class="ll-history-metrics" aria-label="Review summary">
                 <span class="high">{summary.get('high', 0)} high</span>
                 <span class="medium">{summary.get('medium', 0)} medium</span>
                 <span>{summary.get('missing', 0)} possible gaps</span>
@@ -98,19 +98,19 @@ def render_history_card(review, is_active=False):
 def render_review_setup_header():
     st.markdown(
         """
-        <div class="cg-shell">
-            <div class="cg-topbar">
-                <div class="cg-nav-left"><div class="cg-dot"></div><div class="cg-top-label">ContractGuard</div><div class="cg-chip">New review</div></div>
-                <div class="cg-nav-right"><div class="cg-chip">PDF / DOCX / TXT</div><div class="cg-chip">25 MB maximum</div></div>
+        <div class="ll-shell">
+            <div class="ll-topbar">
+                <div class="ll-nav-left"><div class="ll-dot"></div><div class="ll-top-label">Lenslayer</div><div class="ll-chip">New review</div></div>
+                <div class="ll-nav-right"><div class="ll-chip">PDF / DOCX / TXT</div><div class="ll-chip">25 MB maximum</div></div>
             </div>
-            <section class="cg-setup-header">
-                <div class="cg-kicker">Contract review workspace</div>
-                <div class="cg-setup-grid">
+            <section class="ll-setup-header">
+                <div class="ll-kicker">Contract review workspace</div>
+                <div class="ll-setup-grid">
                     <div>
                         <h1>Review a contract.</h1>
                         <p>Upload the agreement, set your perspective, and generate a first-pass report grounded in the document.</p>
                     </div>
-                    <div class="cg-setup-outcome">
+                    <div class="ll-setup-outcome">
                         <span>Review output</span>
                         <strong>Risks with evidence, not unexplained scores.</strong>
                         <p>Get negotiation asks, possible protection gaps, obligations, deadlines, and grounded follow-up answers.</p>
@@ -130,21 +130,21 @@ def render_report_header(analysis, source_name, quality=None):
     quality = quality or {}
     st.markdown(
         f"""
-        <div class="cg-shell">
-            <div class="cg-topbar">
-                <div class="cg-nav-left"><div class="cg-dot"></div><div class="cg-top-label">ContractGuard</div><div class="cg-chip">Report ready</div></div>
-                <div class="cg-nav-right"><div class="cg-chip">{safe_text(quality.get('quality'), 'Parsed')}</div><div class="cg-chip">{'OCR · ' if quality.get('ocr_used') else ''}{quality.get('pages', 1)} page{'s' if quality.get('pages', 1) != 1 else ''}</div></div>
+        <div class="ll-shell">
+            <div class="ll-topbar">
+                <div class="ll-nav-left"><div class="ll-dot"></div><div class="ll-top-label">Lenslayer</div><div class="ll-chip">Report ready</div></div>
+                <div class="ll-nav-right"><div class="ll-chip">{safe_text(quality.get('quality'), 'Parsed')}</div><div class="ll-chip">{'OCR · ' if quality.get('ocr_used') else ''}{quality.get('pages', 1)} page{'s' if quality.get('pages', 1) != 1 else ''}</div></div>
             </div>
-            <header class="cg-report-header">
+            <header class="ll-report-header">
                 <div>
-                    <div class="cg-kicker">Review report</div>
+                    <div class="ll-kicker">Review report</div>
                     <h1>{safe_text(analysis.get('title') or analysis.get('contract_type'), 'Contract review')}</h1>
-                    <div class="cg-meta">{safe_text(analysis.get('contract_type'), 'Unknown type')} · {safe_text(parties)}</div>
-                    <div class="cg-meta">Source: {safe_text(source_name, 'Uploaded document')} · Governing law: {safe_text(analysis.get('governing_law'), 'Not identified')}</div>
+                    <div class="ll-meta">{safe_text(analysis.get('contract_type'), 'Unknown type')} · {safe_text(parties)}</div>
+                    <div class="ll-meta">Source: {safe_text(source_name, 'Uploaded document')} · Governing law: {safe_text(analysis.get('governing_law'), 'Not identified')}</div>
                 </div>
                 {severity_pill(analysis.get('overall_attention'))}
             </header>
-            <div class="cg-summary-strip" aria-label="Review summary">
+            <div class="ll-summary-strip" aria-label="Review summary">
                 <div><strong class="high">{counts['high']}</strong><span>High</span></div>
                 <div><strong class="medium">{counts['medium']}</strong><span>Medium</span></div>
                 <div><strong class="low">{counts['low']}</strong><span>Low</span></div>
@@ -162,8 +162,8 @@ def render_evidence(item):
     quote = safe_text(item.get("quote"), "No exact excerpt returned")
     st.markdown(
         f"""
-        <div class="cg-evidence">
-            <div class="cg-evidence-head"><span>Document evidence</span><span>{citation}</span></div>
+        <div class="ll-evidence">
+            <div class="ll-evidence-head"><span>Document evidence</span><span>{citation}</span></div>
             <blockquote>{quote}</blockquote>
         </div>
         """,
@@ -172,24 +172,24 @@ def render_evidence(item):
 
 
 def render_overview(analysis):
-    st.markdown("<h2 class='cg-section-title'>Executive summary</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p class='cg-lead'>{safe_text(analysis.get('executive_summary'), 'No summary returned.')}</p>", unsafe_allow_html=True)
+    st.markdown("<h2 class='ll-section-title'>Executive summary</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p class='ll-lead'>{safe_text(analysis.get('executive_summary'), 'No summary returned.')}</p>", unsafe_allow_html=True)
     uncertainties = analysis.get("uncertainties", [])
     if uncertainties:
         with st.expander(f"What this review could not verify ({len(uncertainties)})"):
             for item in uncertainties:
                 st.write(f"• {item}")
 
-    st.markdown("<h2 class='cg-section-title'>Key terms</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 class='ll-section-title'>Key terms</h2>", unsafe_allow_html=True)
     for term in analysis.get("key_terms", []):
         st.markdown(
-            f"<div class='cg-panel'><div class='cg-panel-title'>{safe_text(term.get('term'), 'Term')}</div><p>{safe_text(term.get('description'))}</p><div class='cg-inline-meta'>{safe_text(term.get('citation'), 'Location not identified')} · {safe_text(term.get('confidence'), 'Medium')} confidence</div></div>",
+            f"<div class='ll-panel'><div class='ll-panel-title'>{safe_text(term.get('term'), 'Term')}</div><p>{safe_text(term.get('description'))}</p><div class='ll-inline-meta'>{safe_text(term.get('citation'), 'Location not identified')} · {safe_text(term.get('confidence'), 'Medium')} confidence</div></div>",
             unsafe_allow_html=True,
         )
 
     payments = analysis.get("payments", [])
     if payments:
-        st.markdown("<h2 class='cg-section-title'>Payments</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 class='ll-section-title'>Payments</h2>", unsafe_allow_html=True)
         st.dataframe(payments, width="stretch", hide_index=True)
 
 
@@ -204,12 +204,12 @@ def render_risks(analysis):
     for index, risk in enumerate(risks, start=1):
         st.markdown(
             f"""
-            <article class="cg-risk-row">
-                <div class="cg-risk-head"><div><div class="cg-risk-index">{index:02d}</div><h2>{safe_text(risk.get('title'), 'Clause finding')}</h2></div>{severity_pill(risk.get('risk_level'))}</div>
-                <p class="cg-risk-clause">{safe_text(risk.get('clause'))}</p>
-                <div class="cg-label">Why it matters</div><p>{safe_text(risk.get('explanation'))}</p>
-                <div class="cg-label">Next step</div><p>{safe_text(risk.get('recommendation'))}</p>
-                <div class="cg-risk-meta">{confidence_pill(risk.get('confidence'))}</div>
+            <article class="ll-risk-row">
+                <div class="ll-risk-head"><div><div class="ll-risk-index">{index:02d}</div><h2>{safe_text(risk.get('title'), 'Clause finding')}</h2></div>{severity_pill(risk.get('risk_level'))}</div>
+                <p class="ll-risk-clause">{safe_text(risk.get('clause'))}</p>
+                <div class="ll-label">Why it matters</div><p>{safe_text(risk.get('explanation'))}</p>
+                <div class="ll-label">Next step</div><p>{safe_text(risk.get('recommendation'))}</p>
+                <div class="ll-risk-meta">{confidence_pill(risk.get('confidence'))}</div>
             </article>
             """,
             unsafe_allow_html=True,
@@ -229,12 +229,12 @@ def render_negotiation(analysis):
     for item in sorted(priorities, key=lambda entry: entry.get("priority", 99)):
         st.markdown(
             f"""
-            <div class="cg-priority">
-                <div class="cg-priority-number">{safe_text(item.get('priority'), '•')}</div>
+            <div class="ll-priority">
+                <div class="ll-priority-number">{safe_text(item.get('priority'), '•')}</div>
                 <div><h2>{safe_text(item.get('title'), 'Negotiation priority')}</h2><p>{safe_text(item.get('reason'))}</p>
-                <div class="cg-label">Ask for</div><p>{safe_text(item.get('ask'))}</p>
-                <div class="cg-label">Fallback</div><p>{safe_text(item.get('fallback'))}</p>
-                <div class="cg-inline-meta">{safe_text(item.get('citation'), 'Location not identified')}</div></div>
+                <div class="ll-label">Ask for</div><p>{safe_text(item.get('ask'))}</p>
+                <div class="ll-label">Fallback</div><p>{safe_text(item.get('fallback'))}</p>
+                <div class="ll-inline-meta">{safe_text(item.get('citation'), 'Location not identified')}</div></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -249,7 +249,7 @@ def render_missing_protections(analysis):
     st.caption("These items were not clearly detected. They are not confirmed legal omissions.")
     for item in items:
         st.markdown(
-            f"<div class='cg-panel'><div class='cg-panel-title'>{safe_text(item.get('issue'), 'Possible protection gap')}</div><p>{safe_text(item.get('explanation'))}</p><div class='cg-label'>Verify</div><p>{safe_text(item.get('verification_note'))}</p><div class='cg-inline-meta'>{safe_text(item.get('confidence'), 'Medium')} confidence</div></div>",
+            f"<div class='ll-panel'><div class='ll-panel-title'>{safe_text(item.get('issue'), 'Possible protection gap')}</div><p>{safe_text(item.get('explanation'))}</p><div class='ll-label'>Verify</div><p>{safe_text(item.get('verification_note'))}</p><div class='ll-inline-meta'>{safe_text(item.get('confidence'), 'Medium')} confidence</div></div>",
             unsafe_allow_html=True,
         )
         if item.get("suggested_language"):
@@ -261,12 +261,12 @@ def render_obligations(analysis):
     obligations = analysis.get("obligations", [])
     deadlines = analysis.get("deadlines", [])
     if obligations:
-        st.markdown("<h2 class='cg-section-title'>Responsibility matrix</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 class='ll-section-title'>Responsibility matrix</h2>", unsafe_allow_html=True)
         st.dataframe(obligations, width="stretch", hide_index=True)
     else:
         st.info("No obligations were extracted.")
     if deadlines:
-        st.markdown("<h2 class='cg-section-title'>Dates and notice triggers</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 class='ll-section-title'>Dates and notice triggers</h2>", unsafe_allow_html=True)
         st.dataframe(deadlines, width="stretch", hide_index=True)
 
 
@@ -277,7 +277,7 @@ def render_jargon(analysis):
         return
     for item in items:
         st.markdown(
-            f"<div class='cg-panel'><div class='cg-panel-title'>{safe_text(item.get('term'), 'Term')}</div><p>{safe_text(item.get('plain_english'))}</p><div class='cg-inline-meta'>{safe_text(item.get('citation'), 'Location not identified')}</div></div>",
+            f"<div class='ll-panel'><div class='ll-panel-title'>{safe_text(item.get('term'), 'Term')}</div><p>{safe_text(item.get('plain_english'))}</p><div class='ll-inline-meta'>{safe_text(item.get('citation'), 'Location not identified')}</div></div>",
             unsafe_allow_html=True,
         )
 
@@ -289,8 +289,8 @@ def render_playbook_evaluation(evaluation):
     summary = evaluation.get("summary", {})
     st.markdown(
         f"""
-        <div class="cg-comparison-summary">
-            <div class="cg-kicker">Review playbook</div>
+        <div class="ll-comparison-summary">
+            <div class="ll-kicker">Review playbook</div>
             <h2>{safe_text(evaluation.get('playbook_name'), 'Attached playbook')}</h2>
             <p>{summary.get('escalate', 0)} escalation · {summary.get('review', 0)} to verify · {summary.get('within_guardrail', 0)} within guardrail</p>
         </div>
@@ -302,12 +302,12 @@ def render_playbook_evaluation(evaluation):
         attention = item.get("attention", "Medium")
         st.markdown(
             f"""
-            <div class="cg-panel">
-                <div class="cg-risk-head"><div><div class="cg-label">{safe_text(status)}</div><div class="cg-panel-title">{safe_text(item.get('title'), 'Playbook rule')}</div></div>{severity_pill(attention)}</div>
-                <div class="cg-label">Preferred position</div><p>{safe_text(item.get('preferred_position'))}</p>
-                <div class="cg-label">Fallback</div><p>{safe_text(item.get('fallback_position'))}</p>
-                <div class="cg-label">Escalate when</div><p>{safe_text(item.get('escalation_trigger'))}</p>
-                <div class="cg-inline-meta">Owner: {safe_text(item.get('owner'), 'Unassigned')} · Matched: {safe_text(item.get('matched_finding'), 'Nothing detected')}</div>
+            <div class="ll-panel">
+                <div class="ll-risk-head"><div><div class="ll-label">{safe_text(status)}</div><div class="ll-panel-title">{safe_text(item.get('title'), 'Playbook rule')}</div></div>{severity_pill(attention)}</div>
+                <div class="ll-label">Preferred position</div><p>{safe_text(item.get('preferred_position'))}</p>
+                <div class="ll-label">Fallback</div><p>{safe_text(item.get('fallback_position'))}</p>
+                <div class="ll-label">Escalate when</div><p>{safe_text(item.get('escalation_trigger'))}</p>
+                <div class="ll-inline-meta">Owner: {safe_text(item.get('owner'), 'Unassigned')} · Matched: {safe_text(item.get('matched_finding'), 'Nothing detected')}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -319,8 +319,8 @@ def render_playbook_evaluation(evaluation):
 def render_chat_note():
     st.markdown(
         """
-        <div class="cg-ask-shell">
-            <div class="cg-kicker">Document Q&amp;A</div>
+        <div class="ll-ask-shell">
+            <div class="ll-kicker">Document Q&amp;A</div>
             <h2>Ask the contract directly.</h2>
             <p>Answers cite the retrieved excerpts below them. If the evidence is incomplete, verify the full clause before relying on the answer.</p>
         </div>
@@ -330,10 +330,10 @@ def render_chat_note():
 
 
 def render_chat_message(role, content, sources=None):
-    label = "You" if role == "user" else "ContractGuard"
+    label = "You" if role == "user" else "Lenslayer"
     modifier = "user" if role == "user" else "assistant"
     st.markdown(
-        f"<div class='cg-message cg-message-{modifier}'><div class='cg-message-label'>{label}</div><p>{safe_text(content)}</p></div>",
+        f"<div class='ll-message ll-message-{modifier}'><div class='ll-message-label'>{label}</div><p>{safe_text(content)}</p></div>",
         unsafe_allow_html=True,
     )
     if sources:
@@ -346,11 +346,11 @@ def render_chat_message(role, content, sources=None):
 def render_comparison(comparison):
     direction = comparison.get("risk_direction", "Mixed")
     st.markdown(
-        f"<div class='cg-comparison-summary'><div class='cg-kicker'>Version comparison</div><h2>{safe_text(direction)}</h2><p>{safe_text(comparison.get('summary'))}</p></div>",
+        f"<div class='ll-comparison-summary'><div class='ll-kicker'>Version comparison</div><h2>{safe_text(direction)}</h2><p>{safe_text(comparison.get('summary'))}</p></div>",
         unsafe_allow_html=True,
     )
     for change in comparison.get("changes", []):
         st.markdown(
-            f"<div class='cg-panel'><div class='cg-panel-title'>{safe_text(change.get('category'))}: {safe_text(change.get('title'))}</div><div class='cg-label'>Before</div><p>{safe_text(change.get('before'))}</p><div class='cg-label'>After</div><p>{safe_text(change.get('after'))}</p><div class='cg-label'>Impact</div><p>{safe_text(change.get('impact'))}</p></div>",
+            f"<div class='ll-panel'><div class='ll-panel-title'>{safe_text(change.get('category'))}: {safe_text(change.get('title'))}</div><div class='ll-label'>Before</div><p>{safe_text(change.get('before'))}</p><div class='ll-label'>After</div><p>{safe_text(change.get('after'))}</p><div class='ll-label'>Impact</div><p>{safe_text(change.get('impact'))}</p></div>",
             unsafe_allow_html=True,
         )

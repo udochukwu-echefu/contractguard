@@ -1,4 +1,4 @@
-name: ContractGuard tests
+name: Lenslayer tests
 
 on:
   push:
@@ -22,6 +22,13 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
       - name: Install system packages
         run: |
           sudo apt-get update
@@ -31,12 +38,33 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Compile application
-        run: python -m compileall -q app.py analyzer.py auth.py evaluation.py playbooks.py prompts.py storage.py ui.py styles.py export_utils.py tests
+        run: python -m compileall -q app.py analyzer.py auth.py evaluation.py playbooks.py prompts.py storage.py ui.py styles.py export_utils.py backend tests
 
       - name: Run tests
         env:
           PYTHONPATH: .
         run: python -m unittest discover -s tests -v
 
+      - name: Verify platform database migration
+        env:
+          LENSLAYER_PLATFORM_DATABASE_URL: sqlite:////tmp/lenslayer-platform-ci.db
+        run: alembic -c backend/alembic.ini upgrade head
+
       - name: Run report quality gate
         run: python -m evaluation evaluation_fixtures
+
+      - name: Install dashboard dependencies
+        working-directory: dashboard
+        run: npm ci
+
+      - name: Lint dashboard
+        working-directory: dashboard
+        run: npm run lint
+
+      - name: Build dashboard
+        working-directory: dashboard
+        run: npm run build
+
+      - name: Audit dashboard dependencies
+        working-directory: dashboard
+        run: npm audit --audit-level=moderate

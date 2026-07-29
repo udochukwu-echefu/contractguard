@@ -7,7 +7,7 @@ from export_utils import build_csv, build_json_report, build_markdown_report
 from styles import APP_CSS
 
 
-class ContractGuardCoreTests(unittest.TestCase):
+class LenslayerCoreTests(unittest.TestCase):
     def test_txt_parser_adds_line_markers_and_quality(self):
         with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
             handle.write("Agreement\nThe tenant must pay rent monthly.\nTermination requires 30 days notice.")

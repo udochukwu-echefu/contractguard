@@ -22,7 +22,7 @@ from playbooks import ensure_default_playbook, evaluate_report, finding_key
 from storage import ReviewStore
 
 
-APP_NAME = "ContractGuard"
+APP_NAME = "Lenslayer"
 MAX_FILE_BYTES = 25 * 1024 * 1024
 SAMPLE_QUESTIONS = [
     "What should I negotiate before signing?",
@@ -47,7 +47,7 @@ class SampleFile:
 
 
 def configure_page():
-    st.set_page_config(page_title=APP_NAME, page_icon="CG", layout="wide", initial_sidebar_state="auto")
+    st.set_page_config(page_title=APP_NAME, page_icon="LL", layout="wide", initial_sidebar_state="auto")
     st.markdown(styles.APP_CSS, unsafe_allow_html=True)
 
 
@@ -193,7 +193,7 @@ def friendly_error(exc):
         return "The analysis service took too long to respond. Please retry in a moment."
     if "rate" in lowered or "429" in lowered:
         return "The analysis service is busy. Please wait briefly and retry."
-    return f"ContractGuard could not complete this review: {message}"
+    return f"Lenslayer could not complete this review: {message}"
 
 
 def load_sample_contract():
@@ -273,14 +273,14 @@ def render_review_setup(store, identity):
 
     with st.container(key="review_setup"):
         with st.form("review-setup-form"):
-            st.markdown("<div class='cg-form-step'>01 · Add the agreement</div>", unsafe_allow_html=True)
+            st.markdown("<div class='ll-form-step'>01 · Add the agreement</div>", unsafe_allow_html=True)
             uploaded_file = st.file_uploader(
                 "Upload contract",
                 type=["pdf", "docx", "txt"],
                 help="PDF, DOCX, or TXT up to 25 MB",
             )
 
-            st.markdown("<div class='cg-form-step'>02 · Set the review context</div>", unsafe_allow_html=True)
+            st.markdown("<div class='ll-form-step'>02 · Set the review context</div>", unsafe_allow_html=True)
             context_left, context_right = st.columns(2, gap="large")
             with context_left:
                 party = st.selectbox(
@@ -311,7 +311,7 @@ def render_review_setup(store, identity):
                     else 1,
                 )
 
-            st.markdown("<div class='cg-form-step'>03 · Choose the review policy</div>", unsafe_allow_html=True)
+            st.markdown("<div class='ll-form-step'>03 · Choose the review policy</div>", unsafe_allow_html=True)
             policy_left, policy_right = st.columns(2, gap="large")
             with policy_left:
                 selected_playbook_id = None
@@ -394,7 +394,7 @@ def process_upload(uploaded_file, consent, submitted, store, identity):
         for warning in quality.get("warnings", []):
             st.warning(warning)
         if quality.get("ocr_used"):
-            st.info("This PDF was image-based, so ContractGuard used OCR. Check names, dates, and amounts against the original scan.")
+            st.info("This PDF was image-based, so Lenslayer used OCR. Check names, dates, and amounts against the original scan.")
         status.write("Analysing clauses, obligations, payments, and negotiation priorities")
         report = analyze_contract(full_text, st.session_state.review_context)
         playbook = store.get_playbook(identity.owner_id, st.session_state.active_playbook_id)
@@ -541,7 +541,7 @@ def render_exports(report, store, identity):
         st.download_button(
             "Download PDF",
             build_pdf_report(report, st.session_state.source_name, context, notes),
-            file_name=f"{base}-contractguard-report.pdf",
+            file_name=f"{base}-lenslayer-report.pdf",
             mime="application/pdf",
             width="stretch",
         )
@@ -549,7 +549,7 @@ def render_exports(report, store, identity):
         st.download_button(
             "Download DOCX",
             build_docx_report(report, st.session_state.source_name, context, notes),
-            file_name=f"{base}-contractguard-report.docx",
+            file_name=f"{base}-lenslayer-report.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             width="stretch",
         )
@@ -557,7 +557,7 @@ def render_exports(report, store, identity):
         st.download_button(
             "Download Markdown",
             build_markdown_report(report, st.session_state.source_name, context, notes),
-            file_name=f"{base}-contractguard-report.md",
+            file_name=f"{base}-lenslayer-report.md",
             mime="text/markdown",
             width="stretch",
         )

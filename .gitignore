@@ -1,5 +1,5 @@
 .env
-.contractguard/
+.lenslayer/
 .venv/
 __pycache__/
 *.py[cod]
@@ -7,3 +7,8 @@ __pycache__/
 .streamlit/secrets.toml
 landing/node_modules/
 landing/dist/
+.pytest_cache/
+dashboard/.dev.vars
+dashboard/.open-next/
+dashboard/.wrangler/
+dashboard/cloudflare-env.d.ts

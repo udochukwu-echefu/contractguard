@@ -1,4 +1,4 @@
-"""Durable, owner-scoped storage for ContractGuard workspaces.
+"""Durable, owner-scoped storage for Lenslayer workspaces.
 
 The repository defaults to SQLite for local development and accepts a
 ``DATABASE_URL`` for production Postgres deployments. All public reads and
@@ -120,7 +120,7 @@ def storage_config() -> StorageConfig:
             configured = configured.replace("postgresql://", "postgresql+psycopg://", 1)
         return StorageConfig(configured, local_only=False)
 
-    db_path = Path(os.environ.get("CONTRACTGUARD_DB_PATH", ".contractguard/contractguard.db"))
+    db_path = Path(os.environ.get("LENSLAYER_DB_PATH", ".lenslayer/lenslayer.db"))
     db_path.parent.mkdir(parents=True, exist_ok=True)
     return StorageConfig(f"sqlite:///{db_path.resolve()}", local_only=True)
 

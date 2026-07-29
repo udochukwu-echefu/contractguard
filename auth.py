@@ -17,7 +17,7 @@ class Identity:
 
 
 def auth_required() -> bool:
-    return os.environ.get("CONTRACTGUARD_AUTH_REQUIRED", "false").lower() in {"1", "true", "yes"}
+    return os.environ.get("LENSLAYER_AUTH_REQUIRED", "false").lower() in {"1", "true", "yes"}
 
 
 def auth_configured() -> bool:
@@ -41,7 +41,7 @@ def current_identity() -> Identity:
             name=str(claims.get("name") or claims.get("email") or "User"),
             authenticated=True,
         )
-    local_id = os.environ.get("CONTRACTGUARD_LOCAL_OWNER_ID", "local-demo")
+    local_id = os.environ.get("LENSLAYER_LOCAL_OWNER_ID", "local-demo")
     return Identity(owner_id=local_id, email="", name="Local workspace", authenticated=False)
 
 
@@ -51,7 +51,7 @@ def require_identity() -> Identity:
         st.stop()
     identity = current_identity()
     if auth_required() and not identity.authenticated:
-        st.markdown("## Sign in to ContractGuard")
+        st.markdown("## Sign in to Lenslayer")
         st.write("Your reviews are private to your account and cannot be opened by another signed-in user.")
         st.button("Continue with secure sign-in", on_click=st.login, type="primary")
         st.stop()

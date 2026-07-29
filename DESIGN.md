@@ -1,21 +1,21 @@
-# ContractGuard Design System
+# Lenslayer Design System
 
 ## Direction
 
-A dark, editorial product workspace inspired by a careful document review desk. The visual system is restrained: near-black blue-tinted surfaces, warm off-white text, a coral action accent, and semantic risk colors. Typography is compact and utilitarian, with larger display type reserved for the empty state.
+A light, botanical product workspace inspired by a careful document review desk in daylight. The visual system uses mist green working surfaces, a forest navigation rail, leaf-green actions, and distinct semantic risk colors. Typography remains compact and utilitarian, with larger display type reserved for the empty state.
 
 ## Color
 
-- Background: `oklch(0.13 0.008 250)`
-- Raised surface: `oklch(0.17 0.01 250)`
-- Soft surface: `oklch(0.20 0.012 250)`
-- Border: `oklch(0.29 0.012 250)`
-- Primary text: `oklch(0.94 0.008 80)`
-- Muted text: `oklch(0.70 0.012 250)`
-- Accent: `oklch(0.68 0.17 25)`
-- High risk: `oklch(0.67 0.20 25)`
-- Medium risk: `oklch(0.76 0.14 80)`
-- Low risk / positive: `oklch(0.70 0.13 145)`
+- Main canvas: `#FBFCF7`
+- Mist secondary background: `#EDF1D6`
+- Sage border and quiet emphasis: `#9DC08B`
+- Leaf action and positive state: `#609966`
+- Forest navigation and primary action: `#40513B`
+- Primary text: `#263424`
+- Muted text: `#52634F`
+- High risk: `#A8453C`
+- Medium risk: `#946515`
+- Previous dark coral theme backup: `branding/theme-backups/2026-07-29-dark-coral/`
 
 ## Typography
 

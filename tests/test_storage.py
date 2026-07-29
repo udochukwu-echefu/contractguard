@@ -8,7 +8,7 @@ from storage import ReviewStore
 class ReviewStoreTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
-        self.db_path = Path(self.tempdir.name) / "contractguard.db"
+        self.db_path = Path(self.tempdir.name) / "lenslayer.db"
         self.store = ReviewStore(f"sqlite:///{self.db_path}")
 
     def tearDown(self):

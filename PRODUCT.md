@@ -10,7 +10,7 @@ People reviewing consequential documents before making or recording a decision. 
 
 ## Product Purpose
 
-ContractGuard is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, playbook-based deviation review, attributable human decisions, and professional-review handoff. ContractGuard Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
+Lenslayer is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, playbook-based deviation review, attributable human decisions, and professional-review handoff. Lenslayer Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
 
 ## Brand Personality
 
