@@ -11,6 +11,8 @@ ContractGuard is an evidence-linked Streamlit workspace for first-pass contract 
 
 > ContractGuard is for education and triage only. It does not provide legal advice.
 
+ContractGuard is maintained as a standalone Streamlit project. The separate Lenslayer platform lives at [github.com/udochukwu-echefu/lenslayer](https://github.com/udochukwu-echefu/lenslayer).
+
 ## Features
 
 - **PDF, DOCX, and TXT ingestion** with automatic scanned-PDF OCR and extraction diagnostics
