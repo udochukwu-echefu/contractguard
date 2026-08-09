@@ -73,6 +73,17 @@ class ContractGuardCoreTests(unittest.TestCase):
         self.assertIn('st.form_submit_button("Review contract"', app_source)
         self.assertIn('initial_sidebar_state="auto"', app_source)
 
+    def test_repository_scope_is_contract_review_only(self):
+        root = Path(__file__).resolve().parents[1]
+        scoped_text = "\n".join(
+            root.joinpath(name).read_text()
+            for name in ("app.py", "README.md", "PRODUCT.md", "DESIGN.md")
+        ).lower()
+        self.assertNotIn("verify onboarding", scoped_text)
+        self.assertNotIn("identity reconciliation", scoped_text)
+        self.assertFalse(root.joinpath("kyc.py").exists())
+        self.assertFalse(root.joinpath("kyc_ui.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,7 +17,6 @@ from export_utils import (
 )
 import styles
 import ui
-import kyc_ui
 from playbooks import ensure_default_playbook, evaluate_report, finding_key
 from storage import ReviewStore
 
@@ -72,7 +71,6 @@ def initialize_state():
         "comparison": None,
         "review_notes": "",
         "question_input": "",
-        "workspace": "Contract review",
         "retain_source_text": False,
         "retention_days": 30,
         "active_playbook_id": None,
@@ -767,18 +765,6 @@ def main():
     sync_workspace(store, identity)
     with st.sidebar:
         ui.render_sidebar_intro()
-        workspace = st.radio(
-            "Workspace",
-            ["Contract review", "Verify onboarding"],
-            key="workspace",
-            horizontal=True,
-        )
-        if workspace == "Verify onboarding":
-            kyc_ui.initialize_verify_state()
-            kyc_ui.render_verify_sidebar()
-    if workspace == "Verify onboarding":
-        kyc_ui.render_verify_workspace()
-        return
     render_sidebar(store, identity)
     if not st.session_state.file_processed:
         uploaded_file, consent, submitted = render_review_setup(store, identity)

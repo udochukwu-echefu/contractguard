@@ -6,11 +6,11 @@ product
 
 ## Users
 
-People reviewing consequential documents before making or recording a decision. The Contract Review workspace serves people reviewing an agreement before signing, negotiating, or speaking with qualified counsel. The Verify workspace serves onboarding and compliance operations reviewers who need to reconcile submitted identity information across multiple documents.
+People reviewing an agreement before signing, negotiating, or speaking with qualified counsel. This includes founders, independent professionals, operations teams, finance teams, and procurement reviewers who need a clear first pass before deciding what deserves deeper review.
 
 ## Product Purpose
 
-ContractGuard is an evidence-led document intelligence platform. Contract Review provides first-pass agreement triage, negotiation preparation, playbook-based deviation review, attributable human decisions, and professional-review handoff. ContractGuard Verify reconciles onboarding information across identity evidence, flags discrepancies with explainable rules, and records human decisions. It does not provide legal advice or replace regulated identity-verification infrastructure.
+ContractGuard is an evidence-led Streamlit application for first-pass contract review. It identifies clauses that deserve attention, links findings to source excerpts, prepares negotiation questions, extracts obligations and deadlines, compares revisions, and creates an exportable handoff for qualified counsel. It does not provide legal advice.
 
 ## Brand Personality
 
@@ -30,8 +30,8 @@ Calm, rigorous, direct. The interface should feel like a focused review desk: hi
 3. Honest uncertainty: say what was not found, what could not be parsed, and what needs verification.
 4. Privacy in context: explain document handling at the point of upload and provide deletion controls.
 5. Progressive depth: make the first screen scannable, then let users inspect clauses and supporting detail.
-6. Human decision ownership: automation may recommend, but consequential approvals and rejections must remain inspectable and attributable.
-7. Confidence is not risk: extraction reliability, discrepancy severity, and verification status must be displayed as separate signals.
+6. Human decision ownership: model findings remain suggestions until a reviewer records an inspectable decision.
+7. Confidence is not risk: extraction confidence and contractual impact must be displayed as separate signals.
 8. Minimise retained data: persist the useful report by default, retain source text only with explicit user choice, and make retention and hard deletion visible.
 
 ## Accessibility & Inclusion

@@ -40,7 +40,7 @@ def render_sidebar_intro():
                 <div class="cg-top-label">Document intelligence</div>
             </div>
         </div>
-        <p class="cg-sidebar-copy">Evidence-linked contract review and onboarding document reconciliation.</p>
+        <p class="cg-sidebar-copy">Evidence-linked contract review for clearer decisions and negotiations.</p>
         """,
         unsafe_allow_html=True,
     )
