@@ -196,17 +196,81 @@ def chunks_from_text(text):
     return chunks
 
 
-def analyze_contract(text, review_context=None):
+def _normalize_severity(value):
+    normalized = str(value or "Needs verification").strip().lower()
+    return {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "needs verification": "Needs verification",
+    }.get(normalized, "Needs verification")
+
+
+def harden_report(report, classification=None, review_context=None):
+    """Apply deterministic trust labels and cautious jurisdiction language."""
+    classification = dict(classification or {})
+    review_context = dict(review_context or {})
+    category = classification.get("contract_category") or report.get("contract_category") or "General contract review"
+    jurisdiction = str(review_context.get("jurisdiction") or "").strip()
+    jurisdiction_supplied = bool(jurisdiction)
+    report["contract_category"] = category
+    report["contract_type"] = category
+    report["classification"] = {
+        "contract_category": category,
+        "confidence": classification.get("confidence") or "Needs verification",
+        "reason": classification.get("reason") or "Classification metadata was not available.",
+        "confirmed_by_user": bool(classification.get("confirmed_by_user")),
+    }
+    report["jurisdiction_supplied"] = jurisdiction_supplied
+    report["legal_disclaimer"] = "Not legal advice. ContractGuard supports first-pass review and human decision-making."
+    report["overall_attention"] = _normalize_severity(report.get("overall_attention"))
+    guard = "General negotiation suggestion. Confirm enforceability under the applicable jurisdiction."
+    for finding in report.get("risk_assessment", []):
+        finding["risk_level"] = _normalize_severity(finding.get("risk_level"))
+        finding["confidence"] = _normalize_severity(finding.get("confidence")).replace("Needs verification", "Low")
+        finding["contract_category"] = category
+        finding["jurisdiction_supplied"] = jurisdiction_supplied
+        finding["human_review_state"] = finding.get("human_review_state") or "Open"
+        finding["consequence"] = finding.get("consequence") or finding.get("explanation") or "Requires human review."
+        finding["applicable_category"] = finding.get("applicable_category") or "other"
+        basis = str(finding.get("jurisdiction_specific_basis") or "").strip()
+        finding["recommendation_scope"] = "Jurisdiction-specific" if jurisdiction_supplied and basis else "General"
+        recommendation = str(finding.get("recommendation") or "Review this clause and decide whether to request a change.").strip()
+        if not jurisdiction_supplied and guard.lower() not in recommendation.lower():
+            recommendation = f"{recommendation} {guard}"
+        finding["recommendation"] = recommendation
+    for item in report.get("missing_protections", []):
+        item["confidence"] = _normalize_severity(item.get("confidence")).replace("Needs verification", "Low")
+        item["contract_category"] = category
+        item["jurisdiction_supplied"] = jurisdiction_supplied
+        item["human_review_state"] = item.get("human_review_state") or "Open"
+        item["applicable_category"] = item.get("applicable_category") or "other"
+    for item in report.get("negotiation_priorities", []):
+        item["confidence"] = _normalize_severity(item.get("confidence")).replace("Needs verification", "Low")
+        item["contract_category"] = category
+        item["jurisdiction_supplied"] = jurisdiction_supplied
+        item["human_review_state"] = item.get("human_review_state") or "Open"
+        item["applicable_category"] = item.get("applicable_category") or "other"
+        basis = str(item.get("jurisdiction_specific_basis") or "").strip()
+        item["recommendation_scope"] = "Jurisdiction-specific" if jurisdiction_supplied and basis else "General"
+        ask = str(item.get("ask") or "").strip()
+        if not jurisdiction_supplied and ask and guard.lower() not in ask.lower():
+            item["ask"] = f"{ask} {guard}"
+    return report
+
+
+def analyze_contract(text, review_context=None, classification=None):
     llm = get_llm()
     json_llm = llm.bind(response_format={"type": "json_object"})
     response = (CONTRACT_ANALYSIS_PROMPT | json_llm).invoke(
         {
             "contract_text": text[:120_000],
             "review_context": review_context_text(review_context),
+            "contract_classification": json.dumps(classification or {}, ensure_ascii=False),
         }
     )
     try:
-        return json.loads(response.content)
+        return harden_report(json.loads(response.content), classification, review_context)
     except json.JSONDecodeError as exc:
         raise ValueError("The model returned an incomplete report. Please retry the analysis.") from exc
 

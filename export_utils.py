@@ -14,7 +14,10 @@ def build_markdown_report(analysis, source_name, context, notes=""):
         "",
         f"- Source: {_value(source_name)}",
         f"- Contract type: {_value(analysis.get('contract_type'))}",
+        f"- Contract category: {_value(analysis.get('contract_category'))}",
+        f"- Classification confidence: {_value(analysis.get('classification', {}).get('confidence'), 'Needs verification')}",
         f"- Governing law: {_value(analysis.get('governing_law'))}",
+        f"- Jurisdiction supplied by reviewer: {'Yes' if analysis.get('jurisdiction_supplied') else 'No'}",
         f"- Reviewing as: {_value(context.get('party_role'))}",
         f"- Review goal: {_value(context.get('goal'))}",
         "",
@@ -32,8 +35,14 @@ def build_markdown_report(analysis, source_name, context, notes=""):
                 "",
                 _value(risk.get("explanation")),
                 "",
-                f"- Next step: {_value(risk.get('recommendation'))}",
-                f"- Evidence: {_value(risk.get('citation'))}",
+                f"- Source clause: {_value(risk.get('clause'))}",
+                f"- Consequence: {_value(risk.get('consequence'))}",
+                f"- Reviewer action: {_value(risk.get('recommendation'))}",
+                f"- Evidence location: {_value(risk.get('citation'))}",
+                f"- Applicable category: {_value(risk.get('applicable_category'), 'other')}",
+                f"- Confidence: {_value(risk.get('confidence'), 'Low')} (not a measure of legal correctness)",
+                f"- Recommendation scope: {_value(risk.get('recommendation_scope'), 'General')}",
+                f"- Human review state: {_value(risk.get('human_review_state'), 'No decision')}",
                 f"> {_value(risk.get('quote'), 'No exact excerpt returned')}",
                 "",
             ]
@@ -81,7 +90,10 @@ def build_docx_report(analysis, source_name, context, notes=""):
     for label, value in [
         ("Source", source_name),
         ("Contract type", analysis.get("contract_type")),
+        ("Contract category", analysis.get("contract_category")),
+        ("Classification confidence", analysis.get("classification", {}).get("confidence")),
         ("Governing law", analysis.get("governing_law")),
+        ("Jurisdiction supplied by reviewer", "Yes" if analysis.get("jurisdiction_supplied") else "No"),
         ("Reviewing as", context.get("party_role")),
         ("Review goal", context.get("goal")),
     ]:
@@ -95,8 +107,11 @@ def build_docx_report(analysis, source_name, context, notes=""):
     for risk in analysis.get("risk_assessment", []):
         document.add_heading(f"{_value(risk.get('title'), 'Clause finding')} · {_value(risk.get('risk_level'))}", 2)
         document.add_paragraph(_value(risk.get("explanation")))
-        document.add_paragraph(f"Next step: {_value(risk.get('recommendation'))}")
-        document.add_paragraph(f"Evidence: {_value(risk.get('citation'))} — “{_value(risk.get('quote'))}”")
+        document.add_paragraph(f"Source clause: {_value(risk.get('clause'))}")
+        document.add_paragraph(f"Consequence: {_value(risk.get('consequence'))}")
+        document.add_paragraph(f"Reviewer action: {_value(risk.get('recommendation'))}")
+        document.add_paragraph(f"Evidence: {_value(risk.get('citation'))}: {_value(risk.get('quote'))}")
+        document.add_paragraph(f"Category: {_value(risk.get('applicable_category'), 'other')} | Confidence: {_value(risk.get('confidence'), 'Low')} (not legal correctness) | Scope: {_value(risk.get('recommendation_scope'), 'General')} | Human state: {_value(risk.get('human_review_state'), 'No decision')}")
         if risk.get("suggested_language"):
             document.add_paragraph(f"Example language: {risk['suggested_language']}")
 
@@ -133,14 +148,17 @@ def build_pdf_report(analysis, source_name, context, notes=""):
     story = [Paragraph(_value(analysis.get("title") or analysis.get("contract_type"), "Contract review"), styles["Title"])]
     story.append(Paragraph("ContractGuard provides education and first-pass triage, not legal advice.", styles["Italic"]))
     story.append(Spacer(1, 8))
-    story.append(Paragraph(f"Source: {_value(source_name)}<br/>Reviewing as: {_value(context.get('party_role'))}<br/>Governing law: {_value(analysis.get('governing_law'))}", styles["BodyText"]))
+    story.append(Paragraph(f"Source: {_value(source_name)}<br/>Contract category: {_value(analysis.get('contract_category'))}<br/>Classification confidence: {_value(analysis.get('classification', {}).get('confidence'), 'Needs verification')}<br/>Reviewing as: {_value(context.get('party_role'))}<br/>Governing law: {_value(analysis.get('governing_law'))}<br/>Jurisdiction supplied by reviewer: {'Yes' if analysis.get('jurisdiction_supplied') else 'No'}", styles["BodyText"]))
     story.extend([Spacer(1, 10), Paragraph("Executive summary", styles["Heading1"]), Paragraph(_value(analysis.get("executive_summary")), styles["BodyText"])])
     story.append(Paragraph("Priority risks", styles["Heading1"]))
     for risk in analysis.get("risk_assessment", []):
         story.append(Paragraph(f"{_value(risk.get('title'))} · {_value(risk.get('risk_level'))}", styles["Heading2"]))
         story.append(Paragraph(_value(risk.get("explanation")), styles["BodyText"]))
-        story.append(Paragraph(f"Next step: {_value(risk.get('recommendation'))}", styles["BodyText"]))
-        story.append(Paragraph(f"Evidence: {_value(risk.get('citation'))} — {_value(risk.get('quote'))}", styles["BodyText"]))
+        story.append(Paragraph(f"Source clause: {_value(risk.get('clause'))}", styles["BodyText"]))
+        story.append(Paragraph(f"Consequence: {_value(risk.get('consequence'))}", styles["BodyText"]))
+        story.append(Paragraph(f"Reviewer action: {_value(risk.get('recommendation'))}", styles["BodyText"]))
+        story.append(Paragraph(f"Evidence: {_value(risk.get('citation'))}: {_value(risk.get('quote'))}", styles["BodyText"]))
+        story.append(Paragraph(f"Category: {_value(risk.get('applicable_category'), 'other')} | Confidence: {_value(risk.get('confidence'), 'Low')} (not legal correctness) | Scope: {_value(risk.get('recommendation_scope'), 'General')} | Human state: {_value(risk.get('human_review_state'), 'No decision')}", styles["BodyText"]))
     if notes.strip():
         story.extend([Paragraph("Review notes", styles["Heading1"]), Paragraph(notes.strip(), styles["BodyText"])])
     doc.build(story)

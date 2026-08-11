@@ -1,12 +1,13 @@
 import os
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
 
-from analyzer import analyze_contract, chunks_from_text, compare_contracts, parse_document, safe_filename, setup_qa_chain
+from analyzer import analyze_contract, chunks_from_text, compare_contracts, harden_report, parse_document, safe_filename, setup_qa_chain
 from auth import require_identity
 from export_utils import (
     build_csv,
@@ -17,7 +18,14 @@ from export_utils import (
 )
 import styles
 import ui
-from playbooks import ensure_default_playbook, evaluate_report, finding_key
+from playbooks import (
+    CONTRACT_CATEGORIES,
+    classify_contract,
+    ensure_builtin_playbooks,
+    evaluate_report,
+    finding_key,
+    playbook_for_category,
+)
 from storage import ReviewStore
 
 
@@ -75,6 +83,12 @@ def initialize_state():
         "retention_days": 30,
         "active_playbook_id": None,
         "playbooks": [],
+        "pending_review": None,
+        "report_area": "Review",
+        "review_section": "Summary",
+        "actions_section": "Reviewer decisions",
+        "tools_section": "Export and handoff",
+        "notes_saved_at": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -95,12 +109,17 @@ def reset_workspace():
         "comparison": None,
         "review_notes": "",
         "question_input": "",
+        "pending_review": None,
+        "report_area": "Review",
+        "review_section": "Summary",
+        "actions_section": "Reviewer decisions",
+        "tools_section": "Export and handoff",
     }.items():
         st.session_state[key] = value
 
 
 def sync_workspace(store, identity):
-    default_playbook = ensure_default_playbook(store, identity.owner_id)
+    default_playbook = ensure_builtin_playbooks(store, identity.owner_id)
     st.session_state.playbooks = store.list_playbooks(identity.owner_id)
     if not st.session_state.active_playbook_id:
         st.session_state.active_playbook_id = default_playbook["id"]
@@ -180,6 +199,11 @@ def load_review(store, identity, review_id):
     st.session_state.retention_days = review.get("retention_days") or 30
     if review.get("playbook_id"):
         st.session_state.active_playbook_id = review["playbook_id"]
+    updated_at = review.get("updated_at")
+    try:
+        st.session_state.notes_saved_at = datetime.fromisoformat(updated_at).astimezone().strftime("%b %d, %Y %I:%M %p") if updated_at else None
+    except ValueError:
+        st.session_state.notes_saved_at = updated_at
 
 
 def friendly_error(exc):
@@ -212,27 +236,36 @@ def render_sidebar(store, identity):
         elif store.config.local_only:
             st.caption("Local development mode · not for shared production use")
 
-        if st.session_state.file_processed:
-            st.divider()
-            st.markdown("#### Current review")
-            st.caption(st.session_state.source_name or "Uploaded contract")
-            if st.button("Delete current review", type="secondary", width="stretch"):
-                delete_current_review(store, identity)
-                st.rerun()
-
         ui.render_review_history_intro(st.session_state.review_history)
         for review in st.session_state.review_history:
-            ui.render_history_card(review, review.get("id") == st.session_state.active_review_id)
-            if st.button("Open report", key=f"open-{review['id']}", width="stretch"):
+            is_active = review.get("id") == st.session_state.active_review_id
+            ui.render_history_card(review, is_active)
+            if not is_active and st.button("Open review", key=f"open-{review['id']}", width="stretch"):
                 load_review(store, identity, review["id"])
                 st.rerun()
         if st.session_state.review_history:
             st.caption("Saved reviews are private to this workspace owner and expire under the selected retention policy.")
-            if st.button("Delete all saved reviews", width="stretch"):
-                store.clear_reviews(identity.owner_id)
-                st.session_state.review_history = []
-                reset_workspace()
-                st.rerun()
+        with st.expander("Workspace settings"):
+            if st.session_state.file_processed and st.session_state.active_review_id:
+                affected = st.session_state.source_name or "current review"
+                st.error(f"Delete {affected}? The report, decisions, and audit history will be removed permanently and cannot be recovered.")
+                confirmation = st.text_input("Type the document filename to confirm", key="delete-review-name")
+                if st.button(
+                    f"Delete {affected}",
+                    key="delete_review_confirm",
+                    disabled=confirmation != affected,
+                    width="stretch",
+                ):
+                    delete_current_review(store, identity)
+                    st.rerun()
+            if st.session_state.review_history:
+                st.error("Delete every saved review? Reports, decisions, and audit history will be removed permanently and cannot be recovered.")
+                delete_all = st.text_input("Type DELETE ALL to confirm", key="delete-all-name")
+                if st.button("Delete all reviews", key="delete_all_confirm", disabled=delete_all != "DELETE ALL", width="stretch"):
+                    store.clear_reviews(identity.owner_id)
+                    st.session_state.review_history = []
+                    reset_workspace()
+                    st.rerun()
 
 
 def render_review_setup(store, identity):
@@ -254,14 +287,6 @@ def render_review_setup(store, identity):
         "Check a revised version",
     ]
     tolerance_options = ["Conservative", "Balanced", "Commercially flexible"]
-    playbooks = st.session_state.playbooks
-    playbook_ids = [item["id"] for item in playbooks]
-    if st.session_state.active_playbook_id not in playbook_ids and playbook_ids:
-        st.session_state.active_playbook_id = playbook_ids[0]
-    playbook_names = {item["id"]: item["name"] for item in playbooks}
-    selected_playbook_index = (
-        playbook_ids.index(st.session_state.active_playbook_id) if st.session_state.active_playbook_id in playbook_ids else 0
-    )
     retention_options = [7, 30, 90, 365]
     retention_index = (
         retention_options.index(st.session_state.retention_days)
@@ -270,75 +295,28 @@ def render_review_setup(store, identity):
     )
 
     with st.container(key="review_setup"):
-        with st.form("review-setup-form"):
-            st.markdown("<div class='cg-form-step'>01 · Add the agreement</div>", unsafe_allow_html=True)
-            uploaded_file = st.file_uploader(
-                "Upload contract",
-                type=["pdf", "docx", "txt"],
-                help="PDF, DOCX, or TXT up to 25 MB",
-            )
+        st.markdown("<div class='cg-form-step'>1. Add document</div>", unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Contract document", type=["pdf", "docx", "txt"], help="PDF, DOCX, or TXT up to 25 MB")
 
-            st.markdown("<div class='cg-form-step'>02 · Set the review context</div>", unsafe_allow_html=True)
-            context_left, context_right = st.columns(2, gap="large")
-            with context_left:
-                party = st.selectbox(
-                    "Which side are you reviewing for?",
-                    party_options,
-                    index=party_options.index(current.get("party_role", party_options[0]))
-                    if current.get("party_role") in party_options
-                    else 0,
-                )
-                goal = st.selectbox(
-                    "Primary goal",
-                    goal_options,
-                    index=goal_options.index(current.get("goal", goal_options[0]))
-                    if current.get("goal") in goal_options
-                    else 0,
-                )
-            with context_right:
-                jurisdiction = st.text_input(
-                    "Jurisdiction or governing law",
-                    value=current.get("jurisdiction", ""),
-                    placeholder="e.g. Lagos State, Nigeria",
-                )
-                tolerance = st.selectbox(
-                    "Risk posture",
-                    tolerance_options,
-                    index=tolerance_options.index(current.get("risk_tolerance", "Balanced"))
-                    if current.get("risk_tolerance") in tolerance_options
-                    else 1,
-                )
+        st.markdown("<div class='cg-form-step'>2. Set context</div>", unsafe_allow_html=True)
+        context_left, context_right = st.columns(2, gap="large")
+        with context_left:
+            party = st.selectbox("Review perspective", party_options, index=party_options.index(current.get("party_role", party_options[0])) if current.get("party_role") in party_options else 0)
+            st.markdown("<p class='cg-field-note'>Changes which party's exposure and leverage the review prioritises.</p>", unsafe_allow_html=True)
+            goal = st.selectbox("Primary goal", goal_options, index=goal_options.index(current.get("goal", goal_options[0])) if current.get("goal") in goal_options else 0)
+            st.markdown("<p class='cg-field-note'>Shapes whether findings emphasise understanding, negotiation, or counsel handoff.</p>", unsafe_allow_html=True)
+        with context_right:
+            jurisdiction = st.text_input("Jurisdiction or governing law", value=current.get("jurisdiction", ""), placeholder="e.g. Lagos State, Nigeria")
+            st.markdown("<p class='cg-field-note'>When blank, recommendations stay general and avoid enforceability claims.</p>", unsafe_allow_html=True)
+            tolerance = st.selectbox("Risk posture", tolerance_options, index=tolerance_options.index(current.get("risk_tolerance", "Balanced")) if current.get("risk_tolerance") in tolerance_options else 1)
+            st.markdown("<p class='cg-field-note'>Changes attention thresholds, not the meaning or legality of a clause.</p>", unsafe_allow_html=True)
 
-            st.markdown("<div class='cg-form-step'>03 · Choose the review policy</div>", unsafe_allow_html=True)
-            policy_left, policy_right = st.columns(2, gap="large")
-            with policy_left:
-                selected_playbook_id = None
-                if playbook_ids:
-                    selected_playbook_id = st.selectbox(
-                        "Review playbook",
-                        playbook_ids,
-                        index=selected_playbook_index,
-                        format_func=lambda playbook_id: playbook_names[playbook_id],
-                    )
-                else:
-                    st.info("No review playbooks are available yet.")
-            with policy_right:
-                retention_days = st.selectbox(
-                    "Delete saved review after",
-                    retention_options,
-                    index=retention_index,
-                    format_func=lambda days: f"{days} days",
-                )
-            retain_source_text = st.checkbox(
-                "Retain source text for reopened Q&A and comparison",
-                value=st.session_state.retain_source_text,
-                help="Off by default. The report is saved, but extracted contract text is discarded after this session.",
-            )
-            ui.render_privacy_note()
-            consent = st.checkbox(
-                "I am authorised to process this document and understand that its text is sent to Groq.",
-            )
-            submitted = st.form_submit_button("Review contract", type="primary", width="stretch")
+        st.markdown("<div class='cg-form-step'>3. Confirm privacy and review</div>", unsafe_allow_html=True)
+        retention_days = st.selectbox("Delete saved review after", retention_options, index=retention_index, format_func=lambda days: f"{days} days")
+        retain_source_text = st.checkbox("Retain source text for reopened Q&A and comparison", value=st.session_state.retain_source_text, help="Off by default. The report is saved, but extracted contract text is discarded after this session.")
+        ui.render_privacy_note()
+        consent = st.checkbox("I am authorised to process this document and understand that its text is sent to Groq.")
+        submitted = st.button("Review contract", type="primary", width="stretch", disabled=not uploaded_file or not consent)
 
         sample_clicked = st.button("Review the sample lease", key="main-sample-review", width="stretch")
 
@@ -349,8 +327,6 @@ def render_review_setup(store, identity):
             "goal": goal,
             "risk_tolerance": tolerance,
         }
-        if selected_playbook_id:
-            st.session_state.active_playbook_id = selected_playbook_id
         st.session_state.retention_days = retention_days
         st.session_state.retain_source_text = retain_source_text
 
@@ -393,27 +369,18 @@ def process_upload(uploaded_file, consent, submitted, store, identity):
             st.warning(warning)
         if quality.get("ocr_used"):
             st.info("This PDF was image-based, so ContractGuard used OCR. Check names, dates, and amounts against the original scan.")
-        status.write("Analysing clauses, obligations, payments, and negotiation priorities")
-        report = analyze_contract(full_text, st.session_state.review_context)
-        playbook = store.get_playbook(identity.owner_id, st.session_state.active_playbook_id)
-        report["playbook_evaluation"] = evaluate_report(report, playbook)
-        status.write("Building evidence retrieval for follow-up questions")
-        qa_chain = setup_qa_chain(chunks, st.session_state.review_context)
-
-        st.session_state.analysis = report
-        st.session_state.qa_chain = qa_chain
-        st.session_state.chat_history = []
-        st.session_state.messages = []
-        st.session_state.file_processed = True
-        st.session_state.source_name = uploaded_file.name
-        st.session_state.document_text = full_text
-        st.session_state.document_quality = quality
-        st.session_state.active_review_id = None
-        st.session_state.comparison = None
-        st.session_state.review_notes = ""
-        save_current_review(store, identity)
-        status.update(label="Review ready", state="complete", expanded=False)
-        st.rerun()
+        status.write("Classifying the document before selecting a review playbook")
+        classification = classify_contract(full_text)
+        if classification["requires_confirmation"]:
+            st.session_state.pending_review = {
+                "full_text": full_text,
+                "quality": quality,
+                "source_name": uploaded_file.name,
+                "classification": classification,
+            }
+            status.update(label="Contract type needs confirmation", state="complete", expanded=False)
+            st.rerun()
+        finish_review(full_text, chunks, quality, uploaded_file.name, classification, store, identity, status)
     except Exception as exc:
         status.update(label="Review could not be completed", state="error")
         st.error(friendly_error(exc))
@@ -422,10 +389,83 @@ def process_upload(uploaded_file, consent, submitted, store, identity):
             os.remove(temp_path)
 
 
+def finish_review(full_text, chunks, quality, source_name, classification, store, identity, status=None):
+    if status:
+        status.write(f"Applying the {classification['contract_category']} playbook and analysing evidence")
+    playbook = playbook_for_category(st.session_state.playbooks, classification["contract_category"])
+    if not playbook:
+        raise ValueError("No matching review playbook is available.")
+    report = analyze_contract(full_text, st.session_state.review_context, classification)
+    st.session_state.active_playbook_id = playbook["id"]
+    report["playbook_evaluation"] = evaluate_report(report, playbook)
+    if report["playbook_evaluation"].get("category_mismatch"):
+        raise ValueError("The classified contract type and selected playbook do not agree.")
+    if status:
+        status.write("Building evidence retrieval for document questions")
+    qa_chain = setup_qa_chain(chunks, st.session_state.review_context)
+    st.session_state.analysis = report
+    st.session_state.qa_chain = qa_chain
+    st.session_state.chat_history = []
+    st.session_state.messages = []
+    st.session_state.file_processed = True
+    st.session_state.source_name = source_name
+    st.session_state.document_text = full_text
+    st.session_state.document_quality = quality
+    st.session_state.active_review_id = None
+    st.session_state.comparison = None
+    st.session_state.review_notes = ""
+    st.session_state.pending_review = None
+    save_current_review(store, identity)
+    if status:
+        status.update(label="Review ready", state="complete", expanded=False)
+    st.rerun()
+
+
+def render_classification_confirmation(store, identity):
+    pending = st.session_state.pending_review
+    if not pending:
+        return
+    classification = pending["classification"]
+    ui.render_review_setup_header()
+    st.warning("ContractGuard could not identify the agreement type with enough confidence to choose a specialist playbook.")
+    st.markdown(f"**Document:** {pending['source_name']}  \n**Classification basis:** {classification['reason']}")
+    selected = st.selectbox("Confirm the contract type", CONTRACT_CATEGORIES, index=CONTRACT_CATEGORIES.index(classification["contract_category"]))
+    st.caption("This selection determines which clauses and protections ContractGuard checks. You can still review and edit the resulting human decisions.")
+    confirm_col, cancel_col = st.columns(2)
+    with confirm_col:
+        confirm = st.button("Confirm type and continue", type="primary", width="stretch")
+    with cancel_col:
+        cancel = st.button("Cancel review", width="stretch")
+    if cancel:
+        st.session_state.pending_review = None
+        st.rerun()
+    if confirm:
+        classification.update({"contract_category": selected, "confirmed_by_user": True, "requires_confirmation": False})
+        status = st.status("Preparing the confirmed review…", expanded=True)
+        try:
+            finish_review(
+                pending["full_text"],
+                chunks_from_text(pending["full_text"]),
+                pending["quality"],
+                pending["source_name"],
+                classification,
+                store,
+                identity,
+                status,
+            )
+        except Exception as exc:
+            status.update(label="Review could not be completed", state="error")
+            st.error(friendly_error(exc))
+
+
 def render_chat(store, identity):
     ui.render_chat_note()
     if st.session_state.qa_chain is None and not st.session_state.document_text:
-        st.info("Source text was not retained for this saved review. The report remains available, but document Q&A cannot be rebuilt.")
+        ui.render_unavailable("Ask the document is unavailable", "Source text was not retained for this review, so evidence retrieval cannot be rebuilt.")
+        if st.button("Run a new review with source retention enabled", key="new-retained-ask"):
+            reset_workspace()
+            st.session_state.retain_source_text = True
+            st.rerun()
         return
     st.caption("Try one of these questions")
     columns = st.columns(3)
@@ -482,7 +522,11 @@ def render_compare(store, identity):
     st.markdown("### Compare a revised version")
     st.write("Upload a second version to identify substantive additions, removals, and risk changes. Formatting-only changes are ignored where possible.")
     if not st.session_state.document_text:
-        st.info("Source text was not retained for this saved review, so version comparison is unavailable after reopening it.")
+        ui.render_unavailable("Version comparison is unavailable", "Source text was not retained for this review, so there is no evidence baseline to compare against.")
+        if st.button("Run a new review with source retention enabled", key="new-retained-compare"):
+            reset_workspace()
+            st.session_state.retain_source_text = True
+            st.rerun()
         return
     revised = st.file_uploader("Revised PDF, DOCX, or TXT", type=["pdf", "docx", "txt"], key="revised-file")
     if revised and st.button("Compare versions", width="stretch"):
@@ -522,28 +566,34 @@ def render_compare(store, identity):
 
 def render_exports(report, store, identity):
     st.markdown("### Export and handoff")
+    st.caption("Prepare context for counsel or another reviewer. The legal-advice disclosure is included in every report export.")
     notes = st.text_area(
-        "Private review notes",
+        "Private handoff notes",
         value=st.session_state.review_notes,
         placeholder="Add questions, decisions, or context for counsel. Notes are saved with this review and included in exports.",
         height=140,
     )
-    if notes != st.session_state.review_notes:
+    saved_label = st.session_state.notes_saved_at or "Not saved yet"
+    st.caption(f"Last saved: {saved_label}")
+    if st.button("Save handoff notes", disabled=notes == st.session_state.review_notes):
         st.session_state.review_notes = notes
         save_current_review(store, identity)
+        st.session_state.notes_saved_at = datetime.now().astimezone().strftime("%b %d, %Y %I:%M %p")
+        st.rerun()
 
     base = safe_filename(st.session_state.source_name.rsplit(".", 1)[0] if st.session_state.source_name else "contract-review")
     context = st.session_state.review_context
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.download_button(
-            "Download PDF",
-            build_pdf_report(report, st.session_state.source_name, context, notes),
-            file_name=f"{base}-contractguard-report.pdf",
-            mime="application/pdf",
-            width="stretch",
-        )
-    with col2:
+    st.download_button(
+        "Download PDF",
+        build_pdf_report(report, st.session_state.source_name, context, notes),
+        file_name=f"{base}-contractguard-report.pdf",
+        mime="application/pdf",
+        type="primary",
+        width="stretch",
+        help="Best for a stable report that can be read, shared, and archived.",
+    )
+    with st.expander("Export options"):
+        st.caption("DOCX · editable counsel handoff")
         st.download_button(
             "Download DOCX",
             build_docx_report(report, st.session_state.source_name, context, notes),
@@ -551,7 +601,7 @@ def render_exports(report, store, identity):
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             width="stretch",
         )
-    with col3:
+        st.caption("Markdown · portable notes and knowledge systems")
         st.download_button(
             "Download Markdown",
             build_markdown_report(report, st.session_state.source_name, context, notes),
@@ -559,8 +609,7 @@ def render_exports(report, store, identity):
             mime="text/markdown",
             width="stretch",
         )
-    col4, col5, col6 = st.columns(3)
-    with col4:
+        st.caption("Obligations CSV · task and owner tracking")
         st.download_button(
             "Obligations CSV",
             build_csv(report.get("obligations", [])),
@@ -569,7 +618,7 @@ def render_exports(report, store, identity):
             disabled=not report.get("obligations"),
             width="stretch",
         )
-    with col5:
+        st.caption("Deadlines CSV · calendar and deadline tracking")
         st.download_button(
             "Deadlines CSV",
             build_csv(report.get("deadlines", [])),
@@ -578,7 +627,7 @@ def render_exports(report, store, identity):
             disabled=not report.get("deadlines"),
             width="stretch",
         )
-    with col6:
+        st.caption("Raw JSON · structured integration or audit data")
         st.download_button(
             "Raw JSON",
             build_json_report(report, context, st.session_state.document_quality),
@@ -594,70 +643,10 @@ def render_playbook(report, store, identity):
     if not playbook:
         st.info("No review playbook is attached to this report.")
         return
-
-    rules = [
-        {
-            "title": rule.get("title", ""),
-            "keywords": ", ".join(rule.get("keywords", [])),
-            "required": bool(rule.get("required")),
-            "preferred_position": rule.get("preferred_position", ""),
-            "fallback_position": rule.get("fallback_position", ""),
-            "escalation_trigger": rule.get("escalation_trigger", ""),
-            "owner": rule.get("owner", ""),
-        }
-        for rule in playbook.get("rules", [])
-    ]
-    with st.expander("Edit or duplicate this playbook"):
-        st.caption("Use plain, testable positions. Each rule should have an owner and a specific escalation trigger.")
-        with st.form("playbook-editor"):
-            name = st.text_input("Playbook name", value=playbook.get("name", ""))
-            description = st.text_area("Purpose", value=playbook.get("description", ""))
-            contract_types = st.text_input(
-                "Contract types",
-                value=", ".join(playbook.get("contract_types", [])),
-                help="Comma-separated, for example SaaS, Services, Supplier.",
-            )
-            edited = st.data_editor(rules, num_rows="dynamic", width="stretch", hide_index=True)
-            save_as_new = st.checkbox("Save as a new playbook")
-            submitted = st.form_submit_button("Save playbook", type="primary")
-        if submitted:
-            if not name.strip():
-                st.error("Give the playbook a name.")
-            else:
-                updated_rules = []
-                edited_rows = edited.to_dict("records") if hasattr(edited, "to_dict") else edited
-                for index, row in enumerate(edited_rows):
-                    if not str(row.get("title", "")).strip():
-                        continue
-                    updated_rules.append(
-                        {
-                            "id": f"rule-{index + 1}-{safe_filename(str(row['title'])).lower()}",
-                            "title": str(row["title"]).strip(),
-                            "keywords": [item.strip() for item in str(row.get("keywords", "")).split(",") if item.strip()],
-                            "required": bool(row.get("required")),
-                            "preferred_position": str(row.get("preferred_position", "")).strip(),
-                            "fallback_position": str(row.get("fallback_position", "")).strip(),
-                            "escalation_trigger": str(row.get("escalation_trigger", "")).strip(),
-                            "owner": str(row.get("owner", "")).strip(),
-                        }
-                    )
-                payload = {
-                    "name": name.strip(),
-                    "description": description.strip(),
-                    "contract_types": [item.strip() for item in contract_types.split(",") if item.strip()],
-                    "rules": updated_rules,
-                    "is_default": False if save_as_new else playbook.get("is_default", False),
-                }
-                if not save_as_new:
-                    payload["id"] = playbook["id"]
-                playbook_id = store.save_playbook(identity.owner_id, payload)
-                st.session_state.active_playbook_id = playbook_id
-                current = store.get_playbook(identity.owner_id, playbook_id)
-                report["playbook_evaluation"] = evaluate_report(report, current)
-                st.session_state.analysis = report
-                save_current_review(store, identity)
-                sync_workspace(store, identity)
-                st.rerun()
+    with st.expander("Playbook rule details"):
+        st.caption(playbook.get("description", ""))
+        for rule in playbook.get("rules", []):
+            st.markdown(f"**{rule.get('title', 'Rule')}**  \nPreferred: {rule.get('preferred_position', '')}  \nEscalate when: {rule.get('escalation_trigger', '')}")
 
 
 def render_decisions(report, store, identity):
@@ -671,7 +660,7 @@ def render_decisions(report, store, identity):
         latest.setdefault(item["finding_key"], item)
 
     st.markdown("### Human review decisions")
-    st.caption("AI findings remain suggestions until a reviewer records a decision. Every submission is timestamped in the review audit history.")
+    st.caption("AI findings and human decisions are separate. Each decision is timestamped and preserved in the audit history.")
     for index, finding in enumerate(report.get("risk_assessment", [])):
         key = finding_key(finding, index)
         previous = latest.get(key, {})
@@ -680,11 +669,11 @@ def render_decisions(report, store, identity):
             if finding.get("quote"):
                 st.caption(f"{finding.get('citation', 'Location not identified')} · “{finding.get('quote')}”")
             with st.form(f"decision-{key}"):
-                options = ["Open", "Accept risk", "Request change", "Escalate", "Resolved"]
-                prior_status = previous.get("status", "Open")
+                options = ["No decision", "Accept", "Reject", "Needs counsel", "Resolved"]
+                prior_status = previous.get("status", "No decision")
                 status = st.selectbox("Decision", options, index=options.index(prior_status) if prior_status in options else 0)
                 assigned_to = st.text_input("Owner", value=previous.get("assigned_to", ""), placeholder="Name, role, or team")
-                rationale = st.text_area("Reasoning", value=previous.get("rationale", ""), placeholder="Why this decision is appropriate and what should happen next")
+                rationale = st.text_area("Add note", value=previous.get("rationale", ""), placeholder="Record why this decision was made and what should happen next")
                 submitted = st.form_submit_button("Record decision")
             if submitted:
                 store.record_decision(
@@ -702,8 +691,8 @@ def render_decisions(report, store, identity):
                 st.rerun()
 
     if decisions:
-        st.markdown("### Decision history")
-        st.dataframe(decisions, width="stretch", hide_index=True)
+        with st.expander("Decision history"):
+            st.dataframe(decisions, width="stretch", hide_index=True)
     with st.expander("Review audit trail"):
         events = store.list_audit_events(identity.owner_id, review_id)
         if events:
@@ -712,7 +701,63 @@ def render_decisions(report, store, identity):
             st.caption("No audit events yet.")
 
 
+def navigate_report(area, section_key=None, section=None):
+    st.session_state.report_area = area
+    if section_key and section:
+        st.session_state[section_key] = section
+
+
+def canonical_contract_category(report):
+    existing = report.get("contract_category") or report.get("classification", {}).get("contract_category")
+    if existing in CONTRACT_CATEGORIES:
+        return existing
+    value = str(report.get("contract_type") or "").lower()
+    if "commercial" in value and "lease" in value:
+        return "Commercial lease"
+    if "lease" in value or "tenancy" in value:
+        return "Residential lease"
+    if "employment" in value or "employee" in value:
+        return "Employment agreement"
+    if "non-disclosure" in value or "nda" in value or "confidentiality" in value:
+        return "NDA"
+    if "vendor" in value or "supplier" in value:
+        return "Vendor agreement"
+    if "service" in value or "consult" in value or "saas" in value:
+        return "Service agreement"
+    return "General contract review"
+
+
+def reconcile_report_trust(report, store, identity):
+    category = canonical_contract_category(report)
+    playbook = playbook_for_category(st.session_state.playbooks, category)
+    current_evaluation = report.get("playbook_evaluation", {})
+    needs_update = (
+        report.get("contract_category") != category
+        or not report.get("classification")
+        or not report.get("legal_disclaimer")
+        or not playbook
+        or current_evaluation.get("playbook_id") != (playbook or {}).get("id")
+    )
+    if not needs_update:
+        return report
+    classification = report.get("classification") or {
+        "contract_category": category,
+        "confidence": "Low",
+        "reason": "Migrated from an earlier report. Confirm the type before relying on specialist playbook coverage.",
+        "confirmed_by_user": False,
+    }
+    classification["contract_category"] = category
+    report = harden_report(report, classification, st.session_state.review_context)
+    if playbook:
+        st.session_state.active_playbook_id = playbook["id"]
+        report["playbook_evaluation"] = evaluate_report(report, playbook)
+    st.session_state.analysis = report
+    save_current_review(store, identity)
+    return report
+
+
 def render_report(report, store, identity):
+    report = reconcile_report_trust(report, store, identity)
     with st.container(key="report_actions"):
         action_space, action_button = st.columns([3, 1])
         with action_button:
@@ -727,31 +772,100 @@ def render_report(report, store, identity):
     warnings = st.session_state.document_quality.get("warnings", [])
     if warnings:
         st.warning("Extraction needs verification: " + " ".join(warnings))
-    tabs = st.tabs(
-        ["Overview", "Risks", "Playbook", "Decisions", "Negotiate", "Protections", "Obligations", "Ask", "Compare", "Export"]
-    )
-    with tabs[0]:
-        ui.render_overview(report)
-        with st.expander("Plain-English glossary"):
-            ui.render_jargon(report)
-    with tabs[1]:
-        ui.render_risks(report)
-    with tabs[2]:
-        render_playbook(report, store, identity)
-    with tabs[3]:
-        render_decisions(report, store, identity)
-    with tabs[4]:
-        ui.render_negotiation(report)
-    with tabs[5]:
-        ui.render_missing_protections(report)
-    with tabs[6]:
-        ui.render_obligations(report)
-    with tabs[7]:
-        render_chat(store, identity)
-    with tabs[8]:
-        render_compare(store, identity)
-    with tabs[9]:
-        render_exports(report, store, identity)
+    review_id = st.session_state.active_review_id
+    if review_id:
+        latest = {}
+        for decision in store.list_decisions(identity.owner_id, review_id):
+            latest.setdefault(decision["finding_key"], decision)
+        for index, finding in enumerate(report.get("risk_assessment", [])):
+            decision = latest.get(finding_key(finding, index))
+            finding["human_review_state"] = decision.get("status") if decision else "No decision"
+
+    st.caption("Guided sequence: Summary → Highest-risk findings → Decisions required → Negotiation plan → Handoff")
+    area = st.segmented_control(
+        "Report area",
+        ["Review", "Actions", "Tools"],
+        key="report_area",
+        label_visibility="collapsed",
+    ) or "Review"
+    source_available = bool(st.session_state.document_text)
+
+    if area == "Review":
+        options = ["Summary", "Findings", "Missing protections", "Obligations and dates"]
+        if st.session_state.review_section not in options:
+            st.session_state.review_section = options[0]
+        section = st.selectbox("Review section", options, key="review_section")
+        if section == "Summary":
+            ui.render_overview(report)
+            render_playbook(report, store, identity)
+            with st.expander("Plain-English glossary"):
+                ui.render_jargon(report)
+            st.button(
+                "Continue to highest-risk findings",
+                type="primary",
+                on_click=navigate_report,
+                args=("Review", "review_section", "Findings"),
+            )
+        elif section == "Findings":
+            ui.render_risks(report)
+            st.button(
+                "Continue to decisions required",
+                type="primary",
+                on_click=navigate_report,
+                args=("Actions", "actions_section", "Reviewer decisions"),
+            )
+        elif section == "Missing protections":
+            ui.render_missing_protections(report)
+        else:
+            ui.render_obligations(report)
+    elif area == "Actions":
+        options = ["Reviewer decisions", "Negotiation plan"]
+        if source_available:
+            options.append("Ask the document")
+        if st.session_state.actions_section not in options:
+            st.session_state.actions_section = options[0]
+        section = st.selectbox("Actions section", options, key="actions_section")
+        if section == "Reviewer decisions":
+            render_decisions(report, store, identity)
+            st.button(
+                "Continue to negotiation plan",
+                type="primary",
+                on_click=navigate_report,
+                args=("Actions", "actions_section", "Negotiation plan"),
+            )
+        elif section == "Negotiation plan":
+            ui.render_negotiation(report)
+            st.button(
+                "Continue to handoff",
+                type="primary",
+                on_click=navigate_report,
+                args=("Tools", "tools_section", "Export and handoff"),
+            )
+        else:
+            render_chat(store, identity)
+        if not source_available:
+            ui.render_unavailable("Ask the document unavailable", "This review was reopened without retained source text.")
+            if st.button("Run a new review with source retention enabled", key="actions-new-retained"):
+                reset_workspace()
+                st.session_state.retain_source_text = True
+                st.rerun()
+    else:
+        options = ["Export and handoff"]
+        if source_available:
+            options.insert(0, "Compare versions")
+        if st.session_state.tools_section not in options:
+            st.session_state.tools_section = options[-1]
+        section = st.selectbox("Tools section", options, key="tools_section")
+        if section == "Compare versions":
+            render_compare(store, identity)
+        else:
+            render_exports(report, store, identity)
+        if not source_available:
+            ui.render_unavailable("Compare versions unavailable", "This review was reopened without retained source text.")
+            if st.button("Run a new review with source retention enabled", key="tools-new-retained"):
+                reset_workspace()
+                st.session_state.retain_source_text = True
+                st.rerun()
 
 
 def main():
@@ -767,6 +881,9 @@ def main():
         ui.render_sidebar_intro()
     render_sidebar(store, identity)
     if not st.session_state.file_processed:
+        if st.session_state.pending_review:
+            render_classification_confirmation(store, identity)
+            return
         uploaded_file, consent, submitted = render_review_setup(store, identity)
         process_upload(uploaded_file, consent, submitted, store, identity)
         return

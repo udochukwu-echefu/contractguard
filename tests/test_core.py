@@ -72,10 +72,11 @@ class ContractGuardCoreTests(unittest.TestCase):
 
     def test_review_setup_is_styled_as_a_primary_main_page_workflow(self):
         self.assertIn(".st-key-review_setup", APP_CSS)
-        self.assertIn('[data-testid="stFormSubmitButton"]', APP_CSS)
+        self.assertIn('[data-testid="stFileUploaderDropzone"]', APP_CSS)
         app_source = Path(__file__).resolve().parents[1].joinpath("app.py").read_text()
         self.assertIn("def render_review_setup", app_source)
-        self.assertIn('st.form_submit_button("Review contract"', app_source)
+        self.assertIn('st.button("Review contract"', app_source)
+        self.assertIn("disabled=not uploaded_file or not consent", app_source)
         self.assertIn('initial_sidebar_state="auto"', app_source)
 
     def test_repository_scope_is_contract_review_only(self):
