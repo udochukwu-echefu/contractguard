@@ -28,24 +28,41 @@ html, body, [class*="css"], .stApp { font-family: "Figtree", system-ui, sans-ser
 [data-testid="stAppViewContainer"] main h3 { color: var(--cg-text); }
 .block-container { max-width: 1180px; padding: 1.5rem 2rem 4rem; }
 
-/* Use Streamlit's minimal chrome mode and remove Community Cloud's remaining
-   injected toolbar. Keep the sidebar reopen control available on small screens. */
+/* Keep Streamlit's header because its sidebar controls live inside it. Hide
+   only the optional Cloud actions, never the toolbar container itself. */
 header[data-testid="stHeader"] {
-    height: 0;
-    min-height: 0;
+    height: 3.75rem;
+    min-height: 3.75rem;
     background: transparent;
     border: 0;
     box-shadow: none;
+    pointer-events: none;
 }
 header[data-testid="stHeader"] [data-testid="stToolbar"] {
+    background: transparent;
+    pointer-events: none;
+}
+header[data-testid="stHeader"] [data-testid="stToolbarActions"],
+header[data-testid="stHeader"] [data-testid="stMainMenu"] {
     display: none !important;
 }
 [data-testid="stSidebarCollapsedControl"] {
     top: .75rem;
     left: .75rem;
     z-index: 1001;
+    pointer-events: auto;
 }
-[data-testid="stSidebarCollapsedControl"] button {
+[data-testid="stExpandSidebarButton"] {
+    z-index: 1001;
+    pointer-events: auto;
+}
+[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+    pointer-events: auto;
+}
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="stSidebarCollapseButton"] button {
     min-width: 44px;
     min-height: 44px;
     color: var(--cg-text) !important;
