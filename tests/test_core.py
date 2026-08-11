@@ -59,11 +59,16 @@ class ContractGuardCoreTests(unittest.TestCase):
         self.assertIn("party,obligation", csv_text)
         self.assertEqual(safe_filename("My lease (final)"), "My-lease-final")
 
-    def test_streamlit_toolbar_is_removed_without_hiding_sidebar_control(self):
+    def test_streamlit_toolbar_keeps_sidebar_controls_visible(self):
         self.assertIn('header[data-testid="stHeader"]', APP_CSS)
         self.assertIn('header[data-testid="stHeader"] [data-testid="stToolbar"]', APP_CSS)
-        self.assertIn("display: none !important", APP_CSS)
+        self.assertIn('[data-testid="stToolbarActions"]', APP_CSS)
+        self.assertIn('[data-testid="stMainMenu"]', APP_CSS)
+        self.assertIn('[data-testid="stExpandSidebarButton"]', APP_CSS)
+        self.assertIn('[data-testid="stSidebarCollapseButton"]', APP_CSS)
         self.assertIn('[data-testid="stSidebarCollapsedControl"]', APP_CSS)
+        self.assertNotIn("height: 0;", APP_CSS)
+        self.assertIn("pointer-events: auto", APP_CSS)
 
     def test_review_setup_is_styled_as_a_primary_main_page_workflow(self):
         self.assertIn(".st-key-review_setup", APP_CSS)
