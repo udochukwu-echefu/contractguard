@@ -8,6 +8,9 @@ from copy import deepcopy
 from typing import Any
 
 
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 CONTRACT_CATEGORIES = [
     "Residential lease",
     "Employment agreement",

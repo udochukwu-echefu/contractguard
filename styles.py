@@ -1,3 +1,6 @@
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 APP_CSS = """
 <style>
 :root {

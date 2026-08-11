@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 from prompts import COMPARISON_PROMPT, CONTRACT_ANALYSIS_PROMPT, QA_PROMPT, REWRITE_PROMPT
 
 
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 load_dotenv(Path(__file__).with_name(".env"))
 
 

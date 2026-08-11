@@ -2,6 +2,9 @@ import json
 from io import BytesIO, StringIO
 
 
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 def _value(value, fallback="Not identified"):
     return fallback if value in (None, "", []) else str(value)
 

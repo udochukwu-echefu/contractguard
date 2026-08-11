@@ -1,6 +1,9 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 CONTRACT_ANALYSIS_PROMPT = ChatPromptTemplate.from_messages([
     (
         "system",

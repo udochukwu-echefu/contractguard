@@ -1,3 +1,4 @@
+import importlib
 import os
 import tempfile
 from datetime import datetime
@@ -7,25 +8,52 @@ from uuid import uuid4
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
 
-from analyzer import analyze_contract, chunks_from_text, compare_contracts, harden_report, parse_document, safe_filename, setup_qa_chain
+import prompts as prompts_module
+
+
+def fresh_local_module(module):
+    """Reload a helper when Streamlit hot-reloads app.py but keeps old modules cached."""
+    if getattr(module, "CONTRACTGUARD_MODULE_VERSION", 0) < 2:
+        importlib.invalidate_caches()
+        return importlib.reload(module)
+    return module
+
+
+prompts_module = fresh_local_module(prompts_module)
+import analyzer as analyzer_module
+analyzer_module = fresh_local_module(analyzer_module)
+
+analyze_contract = analyzer_module.analyze_contract
+chunks_from_text = analyzer_module.chunks_from_text
+compare_contracts = analyzer_module.compare_contracts
+harden_report = analyzer_module.harden_report
+parse_document = analyzer_module.parse_document
+safe_filename = analyzer_module.safe_filename
+setup_qa_chain = analyzer_module.setup_qa_chain
+
 from auth import require_identity
-from export_utils import (
-    build_csv,
-    build_docx_report,
-    build_json_report,
-    build_markdown_report,
-    build_pdf_report,
-)
-import styles
-import ui
-from playbooks import (
-    CONTRACT_CATEGORIES,
-    classify_contract,
-    ensure_builtin_playbooks,
-    evaluate_report,
-    finding_key,
-    playbook_for_category,
-)
+import export_utils as export_module
+import playbooks as playbooks_module
+import styles as styles_module
+import ui as ui_module
+
+export_module = fresh_local_module(export_module)
+playbooks_module = fresh_local_module(playbooks_module)
+styles = fresh_local_module(styles_module)
+ui = fresh_local_module(ui_module)
+
+build_csv = export_module.build_csv
+build_docx_report = export_module.build_docx_report
+build_json_report = export_module.build_json_report
+build_markdown_report = export_module.build_markdown_report
+build_pdf_report = export_module.build_pdf_report
+
+CONTRACT_CATEGORIES = playbooks_module.CONTRACT_CATEGORIES
+classify_contract = playbooks_module.classify_contract
+ensure_builtin_playbooks = playbooks_module.ensure_builtin_playbooks
+evaluate_report = playbooks_module.evaluate_report
+finding_key = playbooks_module.finding_key
+playbook_for_category = playbooks_module.playbook_for_category
 from storage import ReviewStore
 
 

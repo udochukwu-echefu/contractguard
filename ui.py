@@ -3,6 +3,9 @@ from html import escape
 import streamlit as st
 
 
+CONTRACTGUARD_MODULE_VERSION = 2
+
+
 def safe_text(value, fallback=""):
     return escape(fallback if value in (None, "") else str(value))
 
